@@ -1,0 +1,449 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Dashboard{% endblock %}
+
+{% block content %}
+<!-- Leaflet CSS & JS for OpenStreetMap display -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+
+    <!-- Welcome & Announcement Banner -->
+    <div class="card card-custom border-0 shadow-sm mb-4 overflow-hidden bg-gradient" style="background: linear-gradient(135deg, rgba(255,193,7,0.15) 0%, rgba(255,255,255,1) 100%);">
+        <div class="card-body p-4 p-md-5">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <span class="badge bg-warning text-dark mb-2 fw-semibold px-3 py-1 rounded-pill">Welcome Back!</span>
+                    <h2 class="fw-bold text-dark mb-1">Hello, {{ user.username }} 👋</h2>
+                    <p class="text-muted mb-0">Ready for your next adventure? Check your travel dashboard below.</p>
+                </div>
+                <!-- Announcement Box -->
+                <div class="bg-white border rounded-4 p-3 shadow-sm" style="max-width: 350px;">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="fs-5">📢</span>
+                        <h6 class="fw-bold mb-0 text-dark">Announcement</h6>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        {% if announcement %}
+                            {{ announcement.content or announcement.title }}
+                        {% else %}
+                            Explore our newly updated budget calculators and optimized AI travel recommendations!
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weather & Location Status Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-bold d-block mb-1">🌤️ Today's Weather</span>
+                        <h4 class="fw-bold text-dark mb-1" id="weather-temp">Loading weather...</h4>
+                        <p class="text-muted small mb-0" id="weather-desc">Fetching local conditions based on your coordinates</p>
+                    </div>
+                    <div class="fs-1 text-warning" id="weather-icon">🌡️</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-bold d-block mb-1">📍 Your Current Position</span>
+                        <h5 class="fw-bold text-dark mb-1" id="location-coordinates">
+                            {% if user.latitude and user.longitude %}
+                                Lat: {{ user.latitude }}, Lon: {{ user.longitude }}
+                            {% else %}
+                                <span class="text-danger small">Detecting position...</span>
+                            {% endif %}
+                        </h5>
+                        <p class="text-muted small mb-0" id="location-status">Auto-updating position via browser geolocation...</p>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <button id="btn-detect-location" onclick="detectAndUpdateLocation()" class="btn btn-outline-dark btn-sm rounded-pill px-3">Auto GPS</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map & Manual Location Customization Section -->
+    <div class="row g-4 mb-4">
+        <!-- Map Column -->
+        <div class="col-lg-7">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <h5 class="fw-bold text-dark mb-0">🗺️ Map & Top 5 Nearest Attractions (KNN)</h5>
+                        <span class="text-muted small">💡 Tip: Click anywhere on the map to set custom location</span>
+                    </div>
+                    
+                    <!-- Search Bar for Custom Location -->
+                    <div class="input-group mb-3">
+                        <input type="text" id="search-location-input" class="form-control form-control-sm" placeholder="Search city or place (e.g., Yangon, Mandalay)...">
+                        <button class="btn btn-warning btn-sm text-dark fw-semibold" type="button" onclick="searchCustomLocation()">Search</button>
+                    </div>
+
+                    <div id="user-map" class="rounded-3 border flex-grow-1" style="min-height: 350px;"></div>
+                    
+                    <!-- Selected Custom Location Action Bar -->
+                    <div id="selected-location-container" class="mt-3 p-3 bg-light rounded-3 border d-none">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <span class="fw-bold text-dark small d-block">Selected Custom Location:</span>
+                                <span id="selected-lat-lng-text" class="text-muted small">Lat: 0.00, Lon: 0.00</span>
+                            </div>
+                            <button onclick="saveCustomLocation()" class="btn btn-success btn-sm fw-semibold">Save This Location</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nearby Places Column -->
+        <div class="col-lg-5">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-dark mb-0">📍 Places Near You</h5>
+                        <a href="/places" class="text-warning text-decoration-none small fw-semibold">View All</a>
+                    </div>
+                    <div class="overflow-y-auto flex-grow-1 d-flex flex-column gap-2" style="max-height: 420px;" id="nearby-places-list">
+                        {% if nearby_places %}
+                            {% for place in nearby_places %}
+                            <div class="p-3 border rounded-3 bg-light bg-opacity-50">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h6 class="fw-bold text-dark mb-1">{{ place.name }}</h6>
+                                    <span class="badge bg-warning text-dark">Nearest #{{ loop.index }}</span>
+                                </div>
+                                <p class="text-muted small mb-1">{{ place.description | truncate(70) if place.description else 'Top destination' }}</p>
+                                <a href="/user/places/{{ place.id }}" class="text-primary small fw-semibold text-decoration-none">Explore Place &rarr;</a>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="p-3 border rounded-3 bg-light text-center">
+                                <p class="text-muted small mb-0">No coordinates or nearby places available yet. Please enable browser geolocation or pick on the map.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Planned Trips Section -->
+    <div class="card card-custom border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0">🧳 Your Planned Trips</h5>
+                <a href="/user/itineraries" class="btn btn-sm btn-warning text-dark fw-semibold">Plan New Trip +</a>
+            </div>
+
+            {% if user.trips %}
+                <div class="row g-3">
+                    {% for trip in user.trips %}
+                    <div class="col-md-4">
+                        <div class="p-3 border rounded-3 bg-light bg-opacity-50 h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1">{{ trip.title or 'Unnamed Trip' }}</h6>
+                                <p class="text-muted small mb-2">📅 Created: {{ trip.created_at.strftime('%b %d, %Y') if trip.created_at else 'Recent' }}</p>
+                            </div>
+                            <a href="/user/itineraries" class="btn btn-sm btn-outline-dark align-self-start mt-2">View Itinerary</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <p class="mb-2">You haven't scheduled any trips yet.</p>
+                    <a href="/user/itineraries" class="btn btn-sm btn-outline-dark">Start Planning Now</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- Data from backend ---
+    const nearbyPlacesData = {{ nearby_places | tojson | safe }};
+    // Default to Yangon if user has no saved coordinates
+    let userLat = {{ user.latitude if user.latitude is not none else 16.7954 }};
+    let userLon = {{ user.longitude if user.longitude is not none else 96.1610 }};
+    const hasUserLocation = {{ 'true' if user.latitude and user.longitude else 'false' }};
+
+    let map;
+    let userMarker;
+    let tempCustomMarker = null;
+    let selectedCustomLat = null;
+    let selectedCustomLon = null;
+
+    // --- Helper: Update location display text ---
+    function updateLocationDisplay(lat, lon) {
+        const el = document.getElementById('location-coordinates');
+        if (el) {
+            el.innerText = `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+        }
+    }
+
+    // --- Core function: Send location to backend and optionally reload ---
+    function sendLocationToBackend(newLat, newLon, forceReload = true) {
+        console.log('Sending location to backend:', newLat, newLon, 'reload:', forceReload);
+        fetch('/api/user/update-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latitude: newLat, longitude: newLon })
+        })
+        .then(res => {
+            if (!res.ok) {
+                throw new Error('Network response was not ok: ' + res.status);
+            }
+            return res.json();
+        })
+        .then(data => {
+            console.log('Backend response:', data);
+            if (data.status === 'success') {
+                updateLocationDisplay(newLat, newLon);
+                document.getElementById('location-status').innerText = "Location successfully updated!";
+                // Update the user marker on the map if it exists
+                if (userMarker) {
+                    userMarker.setLatLng([newLat, newLon]);
+                    userMarker.setPopupContent(`<b>📍 {{ user.username }}'s Position</b><br>Lat: ${newLat.toFixed(4)}, Lon: ${newLon.toFixed(4)}`);
+                }
+                if (forceReload) {
+                    // Small delay to let the user see the success message, then reload
+                    setTimeout(() => window.location.reload(), 600);
+                }
+            } else {
+                alert("Failed to save location to database: " + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(err => {
+            console.error("API error:", err);
+            alert("Error saving location. Please check the console for details.");
+        });
+    }
+
+    // --- FIXED: Auto GPS Detection ---
+    function detectAndUpdateLocation(forceReload = true) {
+        if (!("geolocation" in navigator)) {
+            document.getElementById('location-status').innerText = "Geolocation not supported by your browser.";
+            return;
+        }
+
+        document.getElementById('location-status').innerText = "Detecting GPS position...";
+        const btn = document.getElementById('btn-detect-location');
+        if (btn) btn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const newLat = position.coords.latitude;
+                const newLon = position.coords.longitude;
+                console.log('GPS detected:', newLat, newLon);
+
+                // Immediately update the UI display
+                updateLocationDisplay(newLat, newLon);
+
+                // Move the map marker and view
+                if (userMarker) {
+                    userMarker.setLatLng([newLat, newLon]);
+                }
+                if (map) {
+                    map.setView([newLat, newLon], 13);
+                }
+
+                // Send to backend (this will reload the page if forceReload is true)
+                sendLocationToBackend(newLat, newLon, forceReload);
+            },
+            function(error) {
+                console.log("Geolocation error:", error.message);
+                let msg = "GPS failed. ";
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        msg += "Please allow location access in your browser settings.";
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        msg += "Location information is unavailable.";
+                        break;
+                    case error.TIMEOUT:
+                        msg += "The request to get your location timed out.";
+                        break;
+                    default:
+                        msg += "Please pick a spot on the map instead.";
+                }
+                document.getElementById('location-status').innerText = msg;
+                if (btn) btn.disabled = false;
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }
+
+    // --- Initialize on DOM ready ---
+    document.addEventListener("DOMContentLoaded", function() {
+
+        // --- 1. Initialize Map ---
+        map = L.map('user-map').setView([userLat, userLon], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // User Current Position Marker (Blue)
+        userMarker = L.marker([userLat, userLon]).addTo(map)
+            .bindPopup("<b>📍 {{ user.username }}'s Position</b><br>Lat: " + userLat.toFixed(4) + ", Lon: " + userLon.toFixed(4))
+            .openPopup();
+
+        // --- 2. Add Top 5 KNN Places to Map ---
+        if (nearbyPlacesData && nearbyPlacesData.length > 0) {
+            const bounds = [[userLat, userLon]];
+
+            nearbyPlacesData.forEach((place, index) => {
+                if (place.lat && place.lng) {
+                    bounds.push([place.lat, place.lng]);
+
+                    L.circleMarker([place.lat, place.lng], {
+                        color: '#dc3545',
+                        fillColor: '#f8d7da',
+                        fillOpacity: 0.9,
+                        radius: 8
+                    }).addTo(map)
+                    .bindPopup(`<b>#${index + 1} ${place.name}</b><br><a href="/user/places/${place.id}">View Place</a>`);
+                }
+            });
+
+            // Only fit bounds if we have more than just the user point
+            if (bounds.length > 1) {
+                map.fitBounds(bounds, { padding: [30, 30] });
+            }
+        }
+
+        // --- 3. Map Click Event for Manual Selection ---
+        map.on('click', function(e) {
+            selectedCustomLat = e.latlng.lat;
+            selectedCustomLon = e.latlng.lng;
+
+            // Remove previous temporary marker if exists
+            if (tempCustomMarker) {
+                map.removeLayer(tempCustomMarker);
+            }
+
+            // Add new draggable temporary marker for custom selection
+            tempCustomMarker = L.marker([selectedCustomLat, selectedCustomLon], {
+                draggable: true
+            }).addTo(map)
+              .bindPopup("<b>🎯 Selected Custom Location</b><br>Click 'Save This Location' below.")
+              .openPopup();
+
+            // Update user text & show save container
+            document.getElementById('selected-lat-lng-text').innerText = 
+                `Lat: ${selectedCustomLat.toFixed(4)}, Lon: ${selectedCustomLon.toFixed(4)}`;
+            document.getElementById('selected-location-container').classList.remove('d-none');
+
+            // Update coordinates when marker is dragged
+            tempCustomMarker.on('dragend', function(event) {
+                const position = event.target.getLatLng();
+                selectedCustomLat = position.lat;
+                selectedCustomLon = position.lng;
+                document.getElementById('selected-lat-lng-text').innerText = 
+                    `Lat: ${selectedCustomLat.toFixed(4)}, Lon: ${selectedCustomLon.toFixed(4)}`;
+            });
+        });
+
+        // --- 4. Live Weather Forecast ---
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${userLat}&longitude=${userLon}&current_weather=true`)
+            .then(res => res.json())
+            .then(data => {
+                if(data && data.current_weather) {
+                    const temp = data.current_weather.temperature;
+                    const windspeed = data.current_weather.windspeed;
+                    document.getElementById('weather-temp').innerText = `${temp}°C`;
+                    document.getElementById('weather-desc').innerText = `Wind speed: ${windspeed} km/h (Live forecast)`;
+                    
+                    // Simple weather icon logic
+                    const iconEl = document.getElementById('weather-icon');
+                    if (data.current_weather.weathercode >= 1 && data.current_weather.weathercode <= 3) {
+                        iconEl.innerText = '⛅';
+                    } else if (data.current_weather.weathercode >= 45 && data.current_weather.weathercode <= 48) {
+                        iconEl.innerText = '🌫️';
+                    } else if (data.current_weather.weathercode >= 51 && data.current_weather.weathercode <= 67) {
+                        iconEl.innerText = '🌧️';
+                    } else if (data.current_weather.weathercode >= 71 && data.current_weather.weathercode <= 77) {
+                        iconEl.innerText = '❄️';
+                    } else if (data.current_weather.weathercode >= 80 && data.current_weather.weathercode <= 82) {
+                        iconEl.innerText = '🌦️';
+                    } else if (data.current_weather.weathercode >= 95) {
+                        iconEl.innerText = '⛈️';
+                    } else {
+                        iconEl.innerText = '☀️';
+                    }
+                }
+            })
+            .catch(() => {
+                document.getElementById('weather-temp').innerText = "Unavailable";
+                document.getElementById('weather-desc').innerText = "Could not load weather.";
+                document.getElementById('weather-icon').innerText = '❓';
+            });
+
+        // --- 5. Auto Detect Location on Load (only if user has no saved coords) ---
+        {% if not user.latitude or not user.longitude %}
+            console.log('No saved location found. Auto-detecting GPS...');
+            // Delay slightly to let the page render first
+            setTimeout(() => detectAndUpdateLocation(true), 500);
+        {% else %}
+            console.log('User has saved location:', userLat, userLon);
+        {% endif %}
+    });
+
+    // --- Function: Search Location by Name using Nominatim API ---
+    function searchCustomLocation() {
+        const query = document.getElementById('search-location-input').value;
+        if (!query) return;
+
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+
+                    map.setView([lat, lon], 13);
+
+                    selectedCustomLat = lat;
+                    selectedCustomLon = lon;
+
+                    if (tempCustomMarker) {
+                        map.removeLayer(tempCustomMarker);
+                    }
+
+                    tempCustomMarker = L.marker([lat, lon], { draggable: true }).addTo(map)
+                        .bindPopup(`<b>🎯 ${data[0].display_name}</b><br>Click 'Save This Location'`)
+                        .openPopup();
+
+                    document.getElementById('selected-lat-lng-text').innerText = 
+                        `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+                    document.getElementById('selected-location-container').classList.remove('d-none');
+                } else {
+                    alert("Location not found. Please try another keyword.");
+                }
+            })
+            .catch(err => console.error("Search error:", err));
+    }
+
+    // --- Function: Save Custom Selected Location ---
+    function saveCustomLocation() {
+        if (selectedCustomLat !== null && selectedCustomLon !== null) {
+            console.log('Saving custom location:', selectedCustomLat, selectedCustomLon);
+            sendLocationToBackend(selectedCustomLat, selectedCustomLon, true);
+        } else {
+            alert("Please click on the map or search for a location first.");
+        }
+    }
+</script>
+{% endblock %}

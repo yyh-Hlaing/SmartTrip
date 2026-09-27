@@ -1,0 +1,411 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - AI Travel Guide{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 1300px;">
+
+    <div class="mb-4">
+        <h3 class="fw-bold text-dark mb-1">SmartTrip AI Travel Guide</h3>
+        <p class="text-muted small mb-0">Ask our AI agent questions about your upcoming trip plans, regional routes, or
+            recommendations.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+
+        <div class="p-3 bg-light border-bottom">
+            <div class="text-uppercase fw-bold text-muted mb-2" style="font-size: 0.65rem; letter-spacing: 1px;">Explore
+                Regions of Myanmar</div>
+            <div class="d-flex gap-2 overflow-auto pb-1" style="scrollbar-width: none;">
+                {% for region in ["Kachin", "Shan", "Yangon", "Mandalay", "Rakhine", "Tanintharyi"] %}
+                <button type="button"
+                    class="btn btn-sm btn-white border rounded-pill px-3 py-1 fw-medium text-dark d-flex align-items-center gap-1 shadow-sm text-nowrap custom-region-chip"
+                    onclick="sendQuickMessage('Recommend places in {{ region }} Region')">
+                    <span>📍</span> {{ region }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="chat-messages p-4 d-flex flex-column gap-3" id="chat-box"
+            style="height: 480px; overflow-y: auto; background-color: #fafbfc;">
+            <div class="d-flex align-items-start gap-3">
+                <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center fw-bold shadow-sm"
+                    style="width: 35px; height: 35px; min-width: 35px; font-size: 0.9rem;">AI</div>
+                <div class="p-3 rounded-4 shadow-sm bg-white border text-dark"
+                    style="max-width: 75%; font-size: 0.95rem;">
+                    Mingalaba! I am your SmartTrip virtual companion. Ask me anything about itineraries, culture, food,
+                    or places in Myanmar!
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 py-2 bg-light border-top d-flex gap-2 flex-wrap">
+            <span class="text-muted small align-self-center fw-semibold" style="font-size: 0.75rem;">
+                Suggestions:
+            </span>
+
+            <button class="btn btn-sm  rounded-pill bg-white shadow-sm"
+                onclick="sendQuickMessage('Where is the most liked place to visit?')">
+                ❤️ Most Liked
+            </button>
+
+            <button class="btn btn-sm  rounded-pill bg-white shadow-sm"
+                onclick="sendQuickMessage('Recommend a highly rated restaurant.')">
+                🍜 Best Food
+            </button>
+
+            <button class="btn btn-sm  rounded-pill bg-white shadow-sm"
+                onclick="sendQuickMessage('Where is it sunny right now?')">
+                ☀️ Best Weather
+            </button>
+
+            <button type="button" id="ai-suggest-btn" class="btn btn-sm  rounded-pill bg-white shadow-sm fw-semibold"
+                onclick="generateAITrip()">
+                ✨ Auto-Generate AI Trip Plan
+            </button>
+        </div>
+
+        <div class="p-3 bg-white border-top">
+            <form onsubmit="event.preventDefault(); sendAiMessage();" class="input-group align-items-center">
+                <!-- Language Toggle for Voice -->
+                <select id="voice-lang" class="form-select border-light bg-light shadow-none me-2 rounded"
+                    style="max-width: 80px; font-size: 0.85rem; cursor: pointer;">
+                    <option value="en-US">ENG</option>
+                    <option value="my-MM">MM</option>
+                </select>
+
+                <button type="button" id="mic-btn"
+                    class="btn btn-light border rounded-circle me-2 d-flex align-items-center justify-content-center transition-all"
+                    style="width: 40px; height: 40px;" onclick="startVoiceRecognition()" title="Voice Input">🎤</button>
+
+                <input type="text" id="user-input" class="form-control bg-light border-0 px-3 py-2 rounded-start"
+                    placeholder="Ask about routes, hotels, or most liked places..." autocomplete="off">
+                <button type="submit" class="btn text-white px-4 fw-semibold shadow-sm rounded-end"
+                    style="background-color: #d4af37;">Send</button>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .custom-region-chip {
+        transition: all 0.2s ease;
+    }
+
+    .custom-region-chip:hover {
+        background-color: rgba(212, 175, 55, 0.15) !important;
+        border-color: #d4af37 !important;
+        color: #b45309 !important;
+    }
+
+    #chat-box::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #chat-box::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+    }
+
+    /* Typing Animation CSS */
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        height: 24px;
+    }
+
+    .typing-indicator span {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background-color: #6c757d;
+        border-radius: 50%;
+        margin: 0 2px;
+        animation: typing 1.4s infinite ease-in-out both;
+    }
+
+    .typing-indicator span:nth-child(1) {
+        animation-delay: -0.32s;
+    }
+
+    .typing-indicator span:nth-child(2) {
+        animation-delay: -0.16s;
+    }
+
+    @keyframes typing {
+        0%, 80%, 100% {
+            transform: scale(0);
+        }
+        40% {
+            transform: scale(1);
+        }
+    }
+
+    /* Mic Active State CSS */
+    .mic-active {
+        background-color: #dc3545 !important;
+        color: white !important;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+</style>
+
+<script>
+    function sendQuickMessage(text) {
+        document.getElementById('user-input').value = text;
+        sendAiMessage();
+    }
+
+    function sendAiMessage() {
+        const inputField = document.getElementById('user-input');
+        const messageText = inputField.value.trim();
+        if (!messageText) return;
+
+        const chatBox = document.getElementById('chat-box');
+        const userPic = "{{ url_for('static', filename='uploads/' + current_user.profile_pic) if current_user.profile_pic else url_for('static', filename='images/default_avatar.png') }}";
+
+        chatBox.innerHTML += `
+            <div class="d-flex align-items-start justify-content-end gap-3">
+                <div class="p-3 rounded-4 shadow-sm text-white" style="background-color: #212529; max-width: 75%; font-size: 0.95rem;">
+                    ${escapeHtml(messageText)}
+                </div>
+                <img src="${userPic}" alt="User Avatar" class="rounded-circle shadow-sm object-fit-cover" style="width: 35px; height: 35px; min-width: 35px;">
+            </div>`;
+
+        inputField.value = '';
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        const loadingId = 'loading-' + Date.now();
+        chatBox.innerHTML += `
+            <div id="${loadingId}" class="d-flex align-items-start gap-3">
+                <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 35px; height: 35px; min-width: 35px; font-size: 0.9rem;">AI</div>
+                <div class="p-3 rounded-4 shadow-sm bg-white border d-flex align-items-center justify-content-center">
+                    <div class="typing-indicator">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            </div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: messageText })
+        })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById(loadingId).remove();
+
+            let entityCardHtml = '';
+            if (data.suggested_entities && data.suggested_entities.length > 0) {
+                entityCardHtml = '<div class="mt-3 d-flex flex-column gap-2">';
+                data.suggested_entities.forEach(entity => {
+                    const routeBase = entity.type === 'restaurant' ? '/user/restaurant/' : '/user/places/';
+                    const typeLabel = entity.type === 'restaurant' ? 'Restaurant' : 'Place';
+
+                    entityCardHtml += `
+                        <div class="card border-0 shadow-sm bg-light rounded-3">
+                            <div class="card-body p-2 px-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="badge bg-warning text-dark me-2" style="font-size: 0.65rem;">${typeLabel}</span>
+                                    <span class="fw-bold text-dark" style="font-size: 0.9rem;">${escapeHtml(entity.name)}</span>
+                                </div>
+                                <a href="${routeBase}${entity.id}" class="btn btn-sm text-white px-3 py-1 rounded-pill" style="background-color: #d4af37; font-size: 0.8rem;">Explore</a>
+                            </div>
+                        </div>`;
+                });
+                entityCardHtml += '</div>';
+            }
+
+            chatBox.innerHTML += `
+                <div class="d-flex align-items-start gap-3">
+                    <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 35px; height: 35px; min-width: 35px; font-size: 0.9rem;">AI</div>
+                    <div class="p-3 rounded-4 shadow-sm bg-white border text-dark" style="max-width: 75%; font-size: 0.95rem;">
+                        <div>${data.reply.replace(/\n/g, '<br>')}</div>
+                        ${entityCardHtml}
+                    </div>
+                </div>`;
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        })
+        .catch(err => {
+            document.getElementById(loadingId).remove();
+            chatBox.innerHTML += `
+                <div class="d-flex align-items-start gap-3">
+                    <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 35px; height: 35px; min-width: 35px; font-size: 0.9rem;">!</div>
+                    <div class="p-3 rounded-4 shadow-sm bg-white border border-danger text-danger" style="max-width: 75%; font-size: 0.95rem;">
+                        Sorry, an error occurred while connecting to the AI guide. Please try again.
+                    </div>
+                </div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    }
+
+    function startVoiceRecognition() {
+        const micBtn = document.getElementById('mic-btn');
+        const inputField = document.getElementById('user-input');
+        const langSelect = document.getElementById('voice-lang');
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Your browser does not support voice input.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = langSelect.value;
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = function () {
+            micBtn.classList.add('mic-active');
+            inputField.placeholder = "Listening...";
+        };
+
+        recognition.onspeechend = function () {
+            recognition.stop();
+        };
+
+        recognition.onresult = function (event) {
+            const transcript = event.results[0][0].transcript;
+            inputField.value = transcript;
+            micBtn.classList.remove('mic-active');
+            inputField.placeholder = "Ask about routes, hotels, or most liked places...";
+            setTimeout(() => sendAiMessage(), 500);
+        };
+
+        recognition.onerror = function (event) {
+            micBtn.classList.remove('mic-active');
+            inputField.placeholder = "Ask about routes, hotels, or most liked places...";
+        };
+
+        recognition.start();
+    }
+
+    function generateAITrip() {
+        const btn = document.getElementById('ai-suggest-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Building plan...`;
+        btn.disabled = true;
+
+        fetch('/api/trip/ai-suggest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(async response => {
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (err) {
+                throw new Error(`Server returned invalid JSON. Status: ${response.status}`);
+            }
+        })
+        .then(data => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+
+            if (data.success) {
+                const trip = data.trip;
+                const chatBox = document.getElementById('chat-box');
+
+                // Build Waypoints HTML list for the chat card
+                let waypointsHtml = '';
+                if (trip.waypoints && trip.waypoints.length > 0) {
+                    waypointsHtml = '<ul class="mb-2 ps-3 small text-muted">';
+                    trip.waypoints.forEach(wp => {
+                        waypointsHtml += `<li>${escapeHtml(wp.name)}</li>`;
+                    });
+                    waypointsHtml += '</ul>';
+                }
+
+                // Render plan card directly into the chat stream instead of native alert/confirm popups
+                const planCardId = 'trip-card-' + Date.now();
+                chatBox.innerHTML += `
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 35px; height: 35px; min-width: 35px; font-size: 0.9rem;">AI</div>
+                        <div class="p-3 rounded-4 shadow-sm bg-white border text-dark w-75" style="font-size: 0.95rem;">
+                            <div class="fw-bold mb-1 text-dark">✨ AI Suggested Trip: "${escapeHtml(trip.title)}"</div>
+                            <p class="small text-muted mb-2">Here is your recommended itinerary route:</p>
+                            ${waypointsHtml}
+                            <div id="${planCardId}" class="d-flex gap-2 mt-2">
+                                <button type="button" class="btn btn-sm text-white px-3 py-1 rounded-pill fw-semibold" style="background-color: #d4af37;" onclick='confirmAndSaveTrip(${JSON.stringify(trip)}, "${planCardId}")'>
+                                    Plan This Trip
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary px-3 py-1 rounded-pill" onclick="document.getElementById('${planCardId}').parentElement.parentElement.remove()">
+                                    Dismiss
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+            } else {
+                const chatBox = document.getElementById('chat-box');
+                chatBox.innerHTML += `
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 35px; height: 35px; min-width: 35px; font-size: 0.9rem;">!</div>
+                        <div class="p-3 rounded-4 shadow-sm bg-white border border-danger text-danger" style="max-width: 75%; font-size: 0.95rem;">
+                            Could not generate plan: ${escapeHtml(data.error)}
+                        </div>
+                    </div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        })
+        .catch(error => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            console.error("Network/Parsing Error:", error);
+            alert("A network error occurred. Please check the browser console.");
+        });
+    }
+
+    function confirmAndSaveTrip(trip, cardId) {
+        const cardActionDiv = document.getElementById(cardId);
+        cardActionDiv.innerHTML = `<span class="spinner-border spinner-border-sm text-warning" role="status" aria-hidden="true"></span> Saving trip plan...`;
+
+        const formData = new URLSearchParams();
+        formData.append('title', trip.title);
+        formData.append('dest_place_id', trip.dest_place_id);
+
+        const startLat = document.querySelector('input[name="start_lat"]')?.value || '0.0';
+        const startLng = document.querySelector('input[name="start_lng"]')?.value || '0.0';
+        formData.append('start_lat', startLat);
+        formData.append('start_lng', startLng);
+
+        trip.waypoints.forEach(wp => {
+            formData.append('waypoints[]', JSON.stringify(wp));
+        });
+
+        fetch('/trip/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData.toString()
+        })
+        .then(res => {
+            if (res.redirected) {
+                window.location.href = res.url;
+            } else {
+                window.location.reload();
+            }
+        })
+        .catch(err => {
+            console.error("Save Error:", err);
+            cardActionDiv.innerHTML = `<span class="text-danger small">Failed to save trip. Try again.</span>`;
+        });
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+</script>
+{% endblock %}

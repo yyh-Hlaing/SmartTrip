@@ -1,0 +1,281 @@
+<div x-show="sidebarOpen" class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 z-3 d-lg-none"
+    style="display: none;" @click="sidebarOpen = false" x-transition.opacity>
+</div>
+
+<aside class="position-fixed top-0 start-0 h-100 bg-body border-end z-3 shadow-sm d-flex flex-column"
+    style="width: 300px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
+    :style="sidebarOpen ? 'transform: translateX(0);' : ''"
+    :class="sidebarOpen ? '' : 'd-none d-lg-flex position-lg-relative'">
+
+    <div class="p-4 d-flex align-items-center justify-content-between border-bottom border-secondary-subtle">
+        <div>
+            <a href="/admin" class="text-decoration-none fs-4 fw-bold text-body-emphasis tracking-tight">
+                Smart<span class="text-warning">Trip</span>
+            </a>
+            <span class="text-muted d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">ADMIN PANEL</span>
+        </div>
+        <button class="btn btn-close d-lg-none" @click="sidebarOpen = false" aria-label="Close"></button>
+    </div>
+
+    <nav class="nav flex-column flex-grow-1 px-4 py-3 gap-3 overflow-y-auto">
+
+        <div x-data="{ open: true }">
+            <button type="button" @click="open = !open"
+                class="w-100 d-flex justify-content-between align-items-center border-0 bg-transparent px-3 pt-2 pb-1 text-uppercase text-muted fw-bold"
+                style="font-size:0.65rem;letter-spacing:1px;">
+                <span>Overview</span>
+                <span x-text="open ? '▾' : '▸'"></span>
+            </button>
+
+            <div x-show="open" x-collapse>
+                <a href="/admin/dashboard" onclick="switchTab('dashboard-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/dashboard' else '' }}">
+                    <span class="me-2">📊</span> Dashboard
+                </a>
+
+                <a href="/admin/users/info" onclick="switchTab('users-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/users/info' else '' }}">
+                    <span class="me-2">👥</span> User Info
+                </a>
+
+                <a href="/admin/places" onclick="switchTab('places-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/places' else '' }}">
+                    <span class="me-2">📍</span> Maps
+                </a>
+            </div>
+        </div>
+
+        <div x-data="{ open: true }">
+            <button type="button" @click="open = !open"
+                class="w-100 d-flex justify-content-between align-items-center border-0 bg-transparent px-3 pt-2 pb-1 text-uppercase text-muted fw-bold"
+                style="font-size:0.65rem;letter-spacing:1px;">
+                <span>Management</span>
+                <span x-text="open ? '▾' : '▸'"></span>
+            </button>
+
+            <div x-show="open" x-collapse>
+                <a href="/admin/categories/list" onclick="switchTab('places-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/categories/list' else '' }}">
+                    <span class="me-2">🗺️</span> Category
+                </a>
+                <a href="/admin/places/list" onclick="switchTab('places-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/places/list' else '' }}">
+                    <span class="me-2">🗺️</span> Places
+                </a>
+
+                <a href="/admin/users/list" onclick="switchTab('users-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/users/list' else '' }}">
+                    <span class="me-2">👤</span> Users
+                </a>
+
+                <a href="/admin/restaurants/list" onclick="switchTab('restaurants-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/restaurants/list' else '' }}">
+                    <span class="me-2">🍽️</span> Restaurant
+                </a>
+                  <a href="/admin/hotels/list" onclick="switchTab('hotels-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/hotes/list' else '' }}">
+                    <span class="me-2">🍽️</span> Hotel
+                </a>
+
+                <a href="/admin/trips/view" onclick="switchTab('trips-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/trips/view' else '' }}">
+                    <span class="me-2">🧳</span> Trip
+                </a>
+            </div>
+        </div>
+
+        <div x-data="{ open: true }">
+            <button type="button" @click="open = !open"
+                class="w-100 d-flex justify-content-between align-items-center border-0 bg-transparent px-3 pt-2 pb-1 text-uppercase text-muted fw-bold"
+                style="font-size:0.65rem;letter-spacing:1px;">
+                <span>Help & Support</span>
+                <span x-text="open ? '▾' : '▸'"></span>
+            </button>
+
+            <div x-show="open" x-collapse>
+                <a href="/admin/feedbacks/list" onclick="switchTab('feedbacks-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/feedbacks/list' else '' }}">
+                    <span class="me-2">💬</span> User Feedbacks
+                </a>
+
+                <a href="/admin/announcements/list" onclick="switchTab('announcements-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/announcements/list' else '' }}">
+                    <span class="me-2">📢</span> Announcement
+                </a>
+
+                <a href="/admin/ads/list" onclick="switchTab('ads-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/ads/list' else '' }}">
+                    <span class="me-2">📢</span> Ads
+                </a>
+
+                <a href="/admin/settings" onclick="switchTab('account-view', this)"
+                    class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item tab-link {{ 'active-link' if request.path == '/admin/settings' else '' }}">
+                    <span class="me-2">🛡️</span> Account info
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="p-3 border-top bg-body-tertiary">
+        <button id="themeToggle"
+            class="btn btn-outline-secondary w-100 rounded-3 py-2 fw-medium border shadow-sm d-flex align-items-center justify-content-center gap-2">
+            <span id="themeIcon">🌙</span> <span id="themeText">Toggle Theme</span>
+        </button>
+    </div>
+</aside>
+
+<!-- Floating Action Menus -->
+<div x-data="{ activeMenu: null }" @click.away="activeMenu = null"
+    class="position-fixed top-50 end-0 translate-middle-y z-3 d-flex flex-column gap-3" style="padding-right: 0;">
+
+    <div class="d-flex flex-row-reverse align-items-center">
+        <button @click="activeMenu = activeMenu === 'user' ? null : 'user'"
+            class="btn btn-primary shadow-sm border-0 d-flex align-items-center justify-content-center transition"
+            style="border-radius: 8px 0 0 8px; width: 45px; height: 50px; z-index: 10;" title="My Activity">
+            <span class="fs-5" :class="activeMenu === 'user' ? 'rotate-180' : ''"
+                style="transition: transform 0.3s ease;">📌</span>
+        </button>
+
+        <div x-show="activeMenu === 'user'" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-middle-x" x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0 translate-middle-x"
+            class="bg-body shadow-sm border border-end-0 py-3 px-2 d-flex flex-column gap-2"
+            style="border-radius: 12px 0 0 12px; width: 220px; display: none;">
+
+            <div class="text-muted fw-bold text-uppercase px-2 pb-2 border-bottom border-secondary-subtle"
+                style="font-size: 0.7rem; letter-spacing: 1px;">
+                My Activity
+            </div>
+
+            <a href="/admin/popular-places"
+                class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item d-flex align-items-center gap-3">
+                <span>📅</span> View Counts
+            </a>
+            <a href="/admin/reviews-comments"
+                class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item d-flex align-items-center gap-3">
+                <span>📝</span> Review Listing
+            </a>
+            <a href="/admin/top-liked-favorites"
+                class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item d-flex align-items-center gap-3">
+                <span>❤️</span> Most Fav Places
+            </a>
+        </div>
+    </div>
+
+    <div class="d-flex flex-row-reverse align-items-center">
+        <button @click="activeMenu = activeMenu === 'comms' ? null : 'comms'"
+            class="btn btn-warning shadow-sm border-0 d-flex align-items-center justify-content-center transition"
+            style="border-radius: 8px 0 0 8px; width: 45px; height: 50px; z-index: 10;" title="Shortcuts">
+            <span class="fs-5" :class="activeMenu === 'comms' ? 'rotate-180' : ''"
+                style="transition: transform 0.3s ease;">⚡</span>
+        </button>
+
+        <div x-show="activeMenu === 'comms'" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-middle-x" x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0 translate-middle-x"
+            class="bg-body shadow-sm border border-end-0 py-3 px-2 d-flex flex-column gap-2"
+            style="border-radius: 12px 0 0 12px; width: 220px; display: none; max-height: 60vh; overflow-y: auto;">
+
+            <div class="text-muted fw-bold text-uppercase px-2 pb-2 border-bottom border-secondary-subtle"
+                style="font-size: 0.7rem; letter-spacing: 1px;">
+                Shortcuts
+            </div>
+
+            <a href="/admin/analytics/users" onclick="openUserModal()"
+                class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item d-flex align-items-center gap-3">
+                <span>👤</span> User Data
+            </a>
+            <a href="/admin/analytics/places-system" onclick="openPlaceModal(false)"
+                class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item d-flex align-items-center gap-3">
+                <span>📍</span> Place Data  
+            </a>
+            <a href="/admin/reports" class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item d-flex align-items-center gap-3">
+                <span>📩</span> Report List
+            </a>
+            <!-- <a href="#" class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item d-flex align-items-center gap-3">
+                <span>📖</span> Admin Guide
+            </a>-->
+            <a href="/logout"
+                class="nav-link rounded-3 px-3 py-2 fw-medium custom-nav-item d-flex align-items-center gap-3 text-danger">
+                <span>🚪</span> Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-nav-item {
+        color: var(--bs-body-color);
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+    }
+
+    .custom-nav-item:hover {
+        background-color: rgba(255, 193, 7, 0.12);
+        color: #d97706 !important;
+        transform: translateX(3px);
+    }
+
+    .active-link {
+        background-color: rgba(255, 193, 7, 0.18) !important;
+        color: #b45309 !important;
+        font-weight: 600 !important;
+    }
+
+    .transition {
+        transition: transform .25s ease;
+    }
+
+    .rotate-180 {
+        transform: rotate(180deg);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+        const htmlElement = document.documentElement;
+
+        // 1. Check local storage for saved theme, default to light
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        
+        // 2. Apply theme on load
+        htmlElement.setAttribute('data-bs-theme', savedTheme);
+        updateButtonUI(savedTheme);
+
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-bs-theme');
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                
+                htmlElement.setAttribute('data-bs-theme', newTheme);
+                
+                localStorage.setItem('theme', newTheme);
+                
+                updateButtonUI(newTheme);
+
+                fetch('/admin/toggle-theme', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ theme: newTheme })
+                }).catch(() => {});
+            });
+        }
+
+        function updateButtonUI(theme) {
+            if (themeIcon && themeText) {
+                if (theme === 'dark') {
+                    themeIcon.textContent = '☀️';
+                    themeText.textContent = 'Light Mode';
+                } else {
+                    themeIcon.textContent = '🌙';
+                    themeText.textContent = 'Dark Mode';
+                }
+            }
+        }
+    });
+</script>

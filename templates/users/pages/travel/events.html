@@ -1,0 +1,206 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Events & Festivals{% endblock %}
+
+{% block content %}
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+
+    <div class="card card-custom border-0 shadow-sm mb-4 overflow-hidden bg-gradient" style="background: linear-gradient(135deg, rgba(255,193,7,0.15) 0%, rgba(255,255,255,1) 100%);">
+        <div class="card-body p-4 p-md-5">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <span class="badge bg-warning text-dark mb-2 fw-semibold px-3 py-1 rounded-pill">Cultural Calendar</span>
+                    <h2 class="fw-bold text-dark mb-1">🎉 Events & Festivals Directory</h2>
+                    <p class="text-muted mb-0">Discover vibrant local celebrations, seasonal festivals, and cultural events filtered by location and region.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-custom border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <label for="locationFilter" class="form-label small fw-bold text-muted text-uppercase">Filter by Location / Region</label>
+                    <select id="locationFilter" class="form-select border-0 bg-light rounded-pill px-3">
+                        <option value="all">🌍 All Regions & States</option>
+                        <option value="yangon">Yangon Region</option>
+                        <option value="mandalay">Mandalay Region</option>
+                        <option value="shan state">Shan State</option>
+                        <option value="mon state">Mon State</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label for="searchInput" class="form-label small fw-bold text-muted text-uppercase">Search Festival or Event</label>
+                    <input type="text" id="searchInput" class="form-control border-0 bg-light rounded-pill px-3" placeholder="Search by event title or tradition...">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button id="resetFilters" class="btn btn-outline-dark w-100 rounded-pill fw-medium mt-4 mt-md-0">Reset Filters</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5" id="events-grid">
+        
+        <div class="col-md-6 col-lg-4 event-card" data-location="yangon" data-name="thingyan water festival new year">
+            <div class="card card-custom border-0 shadow-sm h-100 overflow-hidden d-flex flex-column">
+                <img src="https://storage.googleapis.com/shwecloud/uploads/photos/2025/12/shwe_d0c2be9118b6b7a91fd073f578a3a153.png" alt="Thingyan Water Festival" class="card-img-top object-fit-cover" style="height: 200px;">
+                <div class="card-body p-4 d-flex flex-column justify-content-between flex-grow-1">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-warning bg-opacity-25 text-dark fw-semibold">Yangon Region</span>
+                            <span class="text-muted small">📅 Mid-April</span>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-1">Thingyan Water Festival</h4>
+                        <p class="text-muted small mb-3">The grandest nationwide celebration featuring water splashing, traditional dance pavilions, music, and welcoming the Myanmar New Year.</p>
+                    </div>
+                    <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">🌊 Cultural Celebration</span>
+                        <a href="#" class="btn btn-sm btn-outline-dark rounded-pill px-3">Event Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4 event-card" data-location="shan state" data-name="phaung daw oo pagoda festival inle lake">
+            <div class="card card-custom border-0 shadow-sm h-100 overflow-hidden d-flex flex-column">
+                <img src="https://b-cdn.springnest.com/media/img/td/phaung-daw-oo-pagoda-festival29fa664.jpg?width=800" alt="Phaung Daw Oo Festival" class="card-img-top object-fit-cover" style="height: 200px;">
+                <div class="card-body p-4 d-flex flex-column justify-content-between flex-grow-1">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-warning bg-opacity-25 text-dark fw-semibold">Shan State</span>
+                            <span class="text-muted small">📅 October (Thadingyut)</span>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-1">Phaung Daw Oo Pagoda Festival</h4>
+                        <p class="text-muted small mb-3">A spectacular multi-week water procession on Inle Lake featuring royal barge boat races and traditional leg-rowing exhibitions.</p>
+                    </div>
+                    <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">🛶 Lake Procession</span>
+                        <a href="#" class="btn btn-sm btn-outline-dark rounded-pill px-3">Event Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4 event-card" data-location="yangon" data-name="thadingyut lighting festival nationwide">
+            <div class="card card-custom border-0 shadow-sm h-100 overflow-hidden d-flex flex-column">
+                <img src="https://www.indochinavoyages.com/wp-content/uploads/2015/11/2-11-15Thadingyut-Festival.jpg" alt="Thadingyut Lighting Festival" class="card-img-top object-fit-cover" style="height: 200px;">
+                <div class="card-body p-4 d-flex flex-column justify-content-between flex-grow-1">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-warning bg-opacity-25 text-dark fw-semibold">Yangon Region</span>
+                            <span class="text-muted small">📅 October</span>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-1">Thadingyut Festival of Lights</h4>
+                        <p class="text-muted small mb-3">Illuminated streets, colorful paper lanterns, and glowing candles lighting up pagodas and homes across the country.</p>
+                    </div>
+                    <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">🏮 Lantern Celebration</span>
+                        <a href="#" class="btn btn-sm btn-outline-dark rounded-pill px-3">Event Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4 event-card" data-location="shan state" data-name="taunggyi hot air balloon festival firework">
+            <div class="card card-custom border-0 shadow-sm h-100 overflow-hidden d-flex flex-column">
+                <img src="https://static.officeholidays.com/images/935x475c/buddhist-lanterns-01.jpg" alt="Taunggyi Balloon Festival" class="card-img-top object-fit-cover" style="height: 200px;">
+                <div class="card-body p-4 d-flex flex-column justify-content-between flex-grow-1">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-warning bg-opacity-25 text-dark fw-semibold">Shan State</span>
+                            <span class="text-muted small">📅 November (Tazaungmone)</span>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-1">Taunggyi Hot Air Balloon Festival</h4>
+                        <p class="text-muted small mb-3">A breathtaking spectacle of giant, intricately decorated paper hot air balloons soaring into the night sky accompanied by fireworks.</p>
+                    </div>
+                    <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">🎈 Night Balloon Show</span>
+                        <a href="#" class="btn btn-sm btn-outline-dark rounded-pill px-3">Event Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4 event-card" data-location="mandalay" data-name="shwezigon pagoda festival bagan">
+            <div class="card card-custom border-0 shadow-sm h-100 overflow-hidden d-flex flex-column">
+                <img src="https://admin.tourism.gov.mm/storage/Festival/01K35WXCRWECYPQHNJN1MY8XRC.jpg" alt="Shwezigon Pagoda Festival" class="card-img-top object-fit-cover" style="height: 200px;">
+                <div class="card-body p-4 d-flex flex-column justify-content-between flex-grow-1">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-warning bg-opacity-25 text-dark fw-semibold">Mandalay Region (Bagan)</span>
+                            <span class="text-muted small">📅 December</span>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-1">Shwezigon Pagoda Fair</h4>
+                        <p class="text-muted small mb-3">Traditional outdoor market fair held on the ancient temple grounds featuring local handicrafts, traditional theater troupes, and food stalls.</p>
+                    </div>
+                    <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">🏛️ Heritage Fair</span>
+                        <a href="#" class="btn btn-sm btn-outline-dark rounded-pill px-3">Event Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4 event-card" data-location="mon state" data-name="mon national day cultural celebration">
+            <div class="card card-custom border-0 shadow-sm h-100 overflow-hidden d-flex flex-column">
+                <img src="https://preview.redd.it/february-2-2026-is-the-79th-mon-national-day-v0-t9z1cqw6ehhg1.png?width=1080&crop=smart&auto=webp&s=edaa3b4b61c3bbe5254cb0ffa02144dbfe7a3929" alt="Mon National Day" class="card-img-top object-fit-cover" style="height: 200px;">
+                <div class="card-body p-4 d-flex flex-column justify-content-between flex-grow-1">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-warning bg-opacity-25 text-dark fw-semibold">Mon State</span>
+                            <span class="text-muted small">📅 February</span>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-1">Mon National Day Cultural Fest</h4>
+                        <p class="text-muted small mb-3">Graceful traditional Mon dances, musical instrument performances, exhibitions, and community feasts celebrating ethnic heritage.</p>
+                    </div>
+                    <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">💃 Cultural Heritage</span>
+                        <a href="#" class="btn btn-sm btn-outline-dark rounded-pill px-3">Event Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const locationFilter = document.getElementById('locationFilter');
+        const searchInput = document.getElementById('searchInput');
+        const resetBtn = document.getElementById('resetFilters');
+        const cards = document.querySelectorAll('.event-card');
+
+        function filterEvents() {
+            const selectedLocation = locationFilter.value.toLowerCase();
+            const query = searchInput.value.toLowerCase().trim();
+
+            cards.forEach(card => {
+                const cardLocation = card.getAttribute('data-location').toLowerCase();
+                const cardName = card.getAttribute('data-name').toLowerCase();
+
+                const matchesLocation = (selectedLocation === 'all' || cardLocation.includes(selectedLocation));
+                const matchesSearch = (cardName.includes(query));
+
+                if (matchesLocation && matchesSearch) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        locationFilter.addEventListener('change', filterEvents);
+        searchInput.addEventListener('input', filterEvents);
+
+        resetBtn.addEventListener('click', function() {
+            locationFilter.value = 'all';
+            searchInput.value = '';
+            cards.forEach(card => card.style.display = 'block');
+        });
+    });
+</script>
+{% endblock %}

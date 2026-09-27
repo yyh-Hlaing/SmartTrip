@@ -1,0 +1,1366 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - AI ခရီးသွား အကြံပြုစနစ်{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+<!-- =====================================================
+     ခေါင်းစဉ်
+====================================================== -->
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h3 class="mb-2">
+            ✈️ SmartTrip AI ခရီးသွား အကြံပြုစနစ်
+        </h3>
+        <p class="text-muted mb-0">
+            AI ဖြင့် ခရီးသွားနေရာများကို အကြံပြုပေးပြီး ကုန်ကျစရိတ်ကို အတိအကျ ခန့်မှန်းပေးသည်
+        </p>
+    </div>
+</div>
+
+<!-- =====================================================
+     အသုံးပြုသူ ထည့်သွင်းမှု
+====================================================== -->
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-bold">
+        🧳 ခရီးစဉ် အချက်အလက်
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <!-- မူရင်းမြို့ -->
+            <div class="col-md-4">
+                <label for="originInput" class="form-label fw-semibold">
+                    📍 ထွက်ခွာမည့်မြို့
+                </label>
+                <input
+                    type="text"
+                    id="originInput"
+                    class="form-control form-control-lg"
+                    placeholder="ဥပမာ - ရန်ကုန်"
+                    autocomplete="off"
+                >
+            </div>
+
+            <!-- ဘတ်ဂျက် -->
+            <div class="col-md-4">
+                <label for="budgetInput" class="form-label fw-semibold">
+                    💰 သုံးစွဲမည့်ဘတ်ဂျက်
+                </label>
+                <input
+                    type="number"
+                    id="budgetInput"
+                    class="form-control form-control-lg"
+                    placeholder="ဥပမာ - ၃၀၀၀၀၀"
+                    min="1000"
+                    step="1000"
+                >
+                <small class="text-muted">
+                    မြန်မာကျပ် (MMK)
+                </small>
+            </div>
+
+            <!-- ခရီးသွားအမျိုးအစား -->
+            <div class="col-md-4">
+                <label for="travelTypeInput" class="form-label fw-semibold">
+                    🏖️ ခရီးသွားအမျိုးအစား
+                </label>
+                <select id="travelTypeInput" class="form-select form-select-lg">
+                    <option value="all">🌏 အားလုံး</option>
+                    <option value="beach">🏖️ ကမ်းခြေ</option>
+                    <option value="nature">🌳 သဘာဝ</option>
+                    <option value="cultural">🏛️ ယဉ်ကျေးမှု</option>
+                    <option value="city">🏙️ မြို့ပြ</option>
+                    <!-- <option value="family">👨‍👩‍👧 မိသားစု</option> -->
+                </select>
+            </div>
+
+            <!-- ခလုတ် -->
+            <div class="col-12">
+                <button
+                    type="button"
+                    id="planTripButton"
+                    class="btn btn-primary btn-lg w-100"
+                >
+                    🚀 နေရာများ အကြံပြုရန်
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     စောင့်ဆိုင်းနေသည်
+====================================================== -->
+
+<div id="loadingIndicator" class="card shadow-sm mb-4" style="display:none;">
+    <div class="card-body text-center py-5">
+        <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
+        <h5>🤖 စနစ်က ခရီးစဉ်ကို စီစဉ်နေပါသည်...</h5>
+        <p id="loadingMessage" class="text-muted mb-0">
+            နေရာများကို ရှာဖွေနေပါသည်...
+        </p>
+    </div>
+</div>
+
+<!-- =====================================================
+     အမှား
+====================================================== -->
+
+<div id="errorBox" class="alert alert-danger" style="display:none;"></div>
+
+<!-- =====================================================
+     ရလဒ်များ
+====================================================== -->
+
+<div id="resultsSection" style="display:none;">
+
+    <!-- အကျဉ်းချုပ် -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-4">
+                    <small class="text-muted">📍 ထွက်ခွာမည့်မြို့</small>
+                    <h5 id="resultOrigin" class="mt-2">-</h5>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted">💰 ဘတ်ဂျက်</small>
+                    <h5 id="resultBudget" class="mt-2 text-success">-</h5>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted">🏖️ ခရီးသွားအမျိုးအစား</small>
+                    <h5 id="resultTravelType" class="mt-2">-</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- အကြံပြုချက် ခေါင်းစဉ် -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">🌟 AI မှ အကြံပြုထားသော နေရာများ</h4>
+        <span id="recommendationCount" class="badge bg-primary">၀ နေရာ</span>
+    </div>
+
+    <!-- အကြံပြုချက်များ -->
+    <div id="recommendationsContainer" class="row g-4 mb-5"></div>
+
+    <!-- မြေပုံ -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-bold">🗺️ အကြံပြုထားသော နေရာများ မြေပုံ</div>
+        <div class="card-body p-0">
+            <div id="map" style="width:100%;height:450px;"></div>
+        </div>
+    </div>
+
+    <!-- ရွေးချယ်ထားသော နေရာ -->
+    <div id="selectedDestinationSection" style="display:none;">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h3 id="selectedDestinationName" class="mb-2">-</h3>
+                <p id="selectedDestinationDescription" class="text-muted">-</p>
+                <div id="selectedDestinationMeta"></div>
+            </div>
+        </div>
+
+        <!-- ကုန်ကျစရိတ် -->
+        <h4 class="mb-3">💰 ခန့်မှန်းကုန်ကျစရိတ် အသေးစိတ်</h4>
+        <div id="costComparisonContainer" class="row g-4 mb-5"></div>
+
+        <!-- ဟိုတယ် -->
+        <h4 class="mb-3">🏨 ဘတ်ဂျက်ဟိုတယ် / တည်းခိုခန်းများ</h4>
+        <div id="hotelList" class="row g-3 mb-5"></div>
+
+        <!-- အကြံပြုချက်များ -->
+        <h4 class="mb-3">💡 ဒေသဆိုင်ရာ ခရီးသွား အကြံပြုချက်များ</h4>
+        <div class="card shadow-sm mb-5">
+            <ul id="tipsList" class="list-group list-group-flush"></ul>
+        </div>
+
+        <!-- ထုပ်ပိုးရန် အကြံပြုချက်များ -->
+        <h4 class="mb-3">🧳 ထုပ်ပိုးရန် အကြံပြုချက်များ</h4>
+        <div class="card shadow-sm mb-5">
+            <ul id="packingList" class="list-group list-group-flush"></ul>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- =========================================================
+     LEAFLET မြေပုံ
+========================================================= -->
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+"use strict";
+
+/* =========================================================
+   OPENROUTER ချိတ်ဆက်မှု
+========================================================= */
+
+const OPENROUTER_MODEL = "google/gemini-3.5-flash";      // သင်နှစ်သက်ရာ model ကို ပြောင်းနိုင်သည်
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+/* =========================================================
+   GLOBAL VARIABLES
+========================================================= */
+
+let mapInstance = null;
+let planningInProgress = false;
+let selectedRecommendation = null;
+let loadingMessageTimer = null;
+let loadingMessageIndex = 0;
+
+/* =========================================================
+   စောင့်ဆိုင်းနေစဉ် ပြသမည့် စာသားများ
+========================================================= */
+
+const smartTripMessages = [
+    "🤖 AI က ခရီးသွားနေရာများကို ရွေးချယ်နေပါသည်...",
+    "💰 ဘတ်ဂျက်နှင့် ကိုက်ညီမှုကို စစ်ဆေးနေပါသည်...",
+    "🏨 တည်းခိုစရိတ်ကို ခန့်မှန်းနေပါသည်...",
+    "🚌 သယ်ယူပို့ဆောင်ရေးစရိတ်ကို ခန့်မှန်းနေပါသည်...",
+    "🍲 စားသောက်စရိတ်ကို ခန့်မှန်းနေပါသည်...",
+    "🗺️ မြေပုံကို ပြင်ဆင်နေပါသည်..."
+];
+
+function startLoadingMessages() {
+    stopLoadingMessages();
+    loadingMessageIndex = 0;
+    const element = document.getElementById("loadingMessage");
+    if (element) {
+        element.textContent = smartTripMessages[0];
+    }
+    loadingMessageTimer = setInterval(function () {
+        loadingMessageIndex = (loadingMessageIndex + 1) % smartTripMessages.length;
+        if (element) {
+            element.textContent = smartTripMessages[loadingMessageIndex];
+        }
+    }, 2200);
+}
+
+function stopLoadingMessages() {
+    if (loadingMessageTimer) {
+        clearInterval(loadingMessageTimer);
+        loadingMessageTimer = null;
+    }
+}
+
+/* =========================================================
+   ခရီးစဉ် စီစဉ်ခြင်း
+========================================================= */
+
+async function planTrip(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
+    if (planningInProgress) {
+        return;
+    }
+
+    const originElement = document.getElementById("originInput");
+    const budgetElement = document.getElementById("budgetInput");
+    const travelTypeElement = document.getElementById("travelTypeInput");
+    const button = document.getElementById("planTripButton");
+    const loading = document.getElementById("loadingIndicator");
+    const results = document.getElementById("resultsSection");
+
+    if (!originElement || !budgetElement || !travelTypeElement) {
+        showError("ထည့်သွင်းရန် နေရာများ မတွေ့ပါ။");
+        return;
+    }
+
+    const origin = originElement.value.trim();
+    const budget = Number(budgetElement.value);
+    const travelType = travelTypeElement.value;
+
+    /* =====================================================
+       စစ်ဆေးခြင်း
+    ====================================================== */
+
+    if (!origin) {
+        showError("📍 ထွက်ခွာမည့်မြို့ကို ထည့်ပေးပါ။");
+        originElement.focus();
+        return;
+    }
+
+    if (!Number.isFinite(budget) || budget <= 0) {
+        showError("💰 ဘတ်ဂျက်ကို မှန်ကန်စွာ ထည့်ပေးပါ။");
+        budgetElement.focus();
+        return;
+    }
+
+    if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === "YOUR_OPENROUTER_API_KEY_HERE") {
+        showError("⚠️ OpenRouter API သော့ကို ထည့်ပေးပါ။");
+        return;
+    }
+
+    /* =====================================================
+       စတင်ခြင်း
+    ====================================================== */
+
+    planningInProgress = true;
+    hideError();
+    selectedRecommendation = null;
+
+    if (results) {
+        results.style.display = "none";
+    }
+    if (loading) {
+        loading.style.display = "block";
+    }
+    if (button) {
+        button.disabled = true;
+        button.dataset.originalText = button.innerHTML;
+        button.innerHTML = "⏳ စီစဉ်နေသည်...";
+    }
+
+    startLoadingMessages();
+
+    try {
+        const result = await generateTravelPlanWithOpenRouter({
+            origin: origin,
+            budget: budget,
+            travelType: travelType
+        });
+
+        validateAIResult(result);
+
+        /* အကျဉ်းချုပ် */
+        setText("resultOrigin", result.origin || origin);
+        setText("resultBudget", formatMMK(result.budget || budget));
+        setText("resultTravelType", formatTravelType(result.travel_type || travelType));
+
+        /* အကြံပြုချက်များ */
+        renderRecommendations(result.recommendations);
+
+        /* မြေပုံ */
+        await populateRecommendationMap(origin, result.recommendations);
+
+        /* ရလဒ်ပြသခြင်း */
+        if (loading) {
+            loading.style.display = "none";
+        }
+        if (results) {
+            results.style.display = "block";
+        }
+
+        if (result.recommendations && result.recommendations.length > 0) {
+            selectRecommendation(result.recommendations[0]);
+        }
+
+        console.log("✅ SmartTrip အောင်မြင်စွာ ထုတ်ပေးပြီး။");
+
+    } catch (error) {
+        console.error("❌ SmartTrip အမှား:", error);
+        showError(error.message || "ခရီးသွား အကြံပြုချက် ရယူရန် မအောင်မြင်ပါ။");
+    } finally {
+        planningInProgress = false;
+        stopLoadingMessages();
+        if (loading) {
+            loading.style.display = "none";
+        }
+        if (button) {
+            button.disabled = false;
+            if (button.dataset.originalText) {
+                button.innerHTML = button.dataset.originalText;
+            }
+        }
+    }
+}
+
+/* =========================================================
+   OPENROUTER API ခေါ်ဆိုခြင်း
+========================================================= */
+
+async function generateTravelPlanWithOpenRouter(input) {
+    const prompt = buildAIPrompt(input);
+
+    const response = await fetch(OPENROUTER_API_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + OPENROUTER_API_KEY,
+            "HTTP-Referer": window.location.origin,
+            "X-Title": "SmartTrip AI"
+        },
+        body: JSON.stringify({
+            model: OPENROUTER_MODEL,
+            messages: [
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            temperature: 0.3,
+            max_tokens: 6000,
+            response_format: { type: "json_object" }
+        })
+    });
+
+    const responseText = await response.text();
+    console.log("OpenRouter အခြေအနေ:", response.status);
+
+    let data;
+    try {
+        data = JSON.parse(responseText);
+    } catch (error) {
+        throw new Error("OpenRouter ဆာဗာမှ JSON ပုံစံ မှန်ကန်စွာ မပြန်ပါ။");
+    }
+
+    if (!response.ok) {
+        const apiMessage = data?.error?.message || "";
+        if (response.status === 429 || apiMessage.toLowerCase().includes("quota")) {
+            throw new Error("❌ OpenRouter API ခွင့်ပြုချက် ကျော်လွန်နေပါသည်။\n\n" +
+                "OpenRouter dashboard ရှိ quota / rate limit / billing ကို စစ်ဆေးပါ။");
+        }
+        throw new Error(apiMessage || `OpenRouter API အမှား (${response.status})`);
+    }
+
+    const text = extractAIResponseText(data);
+    if (!text) {
+        throw new Error("OpenRouter မှ အဖြေ မပြန်ပါ။");
+    }
+
+    return parseAIJSON(text);
+}
+
+/* =========================================================
+   AI PROMPT (မြန်မာလို)
+========================================================= */
+
+function buildAIPrompt(input) {
+    return `You are SmartTrip, a Myanmar travel recommendation AI.
+
+LANGUAGE RULES (VERY IMPORTANT):
+- "description" MUST be written in BURMESE (မြန်မာဘာသာ).
+- "local_tips" array items MUST be written in BURMESE (မြန်မာဘာသာ).
+- "packing_suggestions" array items MUST be written in BURMESE (မြန်မာဘာသာ).
+- "hotels[].description" MUST be written in BURMESE (မြန်မာဘာသာ).
+- "train.note" MUST be written in BURMESE (မြန်မာဘာသာ) when present.
+- Only JSON keys and enum values (like "within_budget") stay in English.
+- Do NOT write tips, packing suggestions, or descriptions in English.
+
+User:
+Origin: ${input.origin}
+Budget: ${input.budget} MMK
+Travel type: ${input.travelType}
+
+Recommend exactly 3 realistic destinations in Myanmar.
+
+Consider:
+- origin
+- budget
+- travel type
+
+Assume:
+- 1 traveler
+- 3 days
+- 2 nights
+
+For each destination provide:
+- destination
+- type
+- short description (in Burmese)
+- recommendation score (0-100)
+- suggested days
+- suggested nights
+- Express cost from bus
+- Train cost
+- Private Car cost
+- 2 budget hotels/guesthouses (description in Burmese)
+- 2 local tips (in Burmese)
+- 2 packing suggestions (in Burmese)
+
+COST RULES:
+- Give realistic MMK estimates.
+- Use price ranges when exact prices are uncertain.
+- If train is unsuitable, set available=false.
+- Calculate total cost using transport + hotel + food + local transport.
+- budget_status must be one of:
+  "within_budget", "slightly_over_budget", "over_budget".
+
+ESTIMATED COST RANGES:
+For each transport type (express, train, private_car), provide:
+- hotel: realistic 2-night budget hotel cost range in MMK
+- food: realistic 3-day food cost range in MMK
+- local_transport: realistic local transport cost range in MMK
+- total_min: sum of minimum costs
+- total_max: sum of maximum costs
+- total_range: formatted as "min - max MMK"
+
+REFERENCE COSTS FOR COMMON DESTINATIONS (in MMK):
+Yangon to Bagan: Express 25,000-35,000, Train 15,000-25,000, Hotel 30,000-40,000/night
+Yangon to Mandalay: Express 30,000-40,000, Train 20,000-30,000, Hotel 25,000-35,000/night
+Yangon to Ngapali: Express 35,000-45,000, Hotel 40,000-60,000/night
+Yangon to Inle Lake: Express 30,000-40,000, Train 20,000-30,000, Hotel 35,000-45,000/night
+Yangon to Golden Rock: Express 15,000-20,000, Hotel 25,000-35,000/night
+Mandalay to Bagan: Express 12,000-18,000, Train 8,000-12,000, Hotel 30,000-40,000/night
+Yangon to Pyin Oo Lwin: Express 25,000-35,000, Train 15,000-25,000, Hotel 30,000-40,000/night
+Yangon to Mawlamyine: Express 20,000-30,000, Train 10,000-20,000, Hotel 25,000-35,000/night
+
+FOOD COSTS PER DAY (range):
+Budget meals: 5,000-8,000 per meal x 3 meals = 15,000-24,000 per day
+3 days total: 45,000-72,000
+
+LOCAL TRANSPORT PER DAY (range):
+Local taxis/buses/tuktuks: 5,000-10,000 per day
+3 days total: 15,000-30,000
+
+IMPORTANT:
+Return ONLY valid JSON.
+No Markdown.
+No code fences.
+No explanation.
+Do not add extra fields.
+Keep all text short.
+All Burmese text must use Myanmar Unicode (not Zawgyi).
+
+Return exactly this structure:
+
+{
+  "status": "success",
+  "origin": "${input.origin}",
+  "budget": ${input.budget},
+  "travel_type": "${input.travelType}",
+  "recommendations": [
+    {
+      "destination": "",
+      "type": "",
+      "description": "",
+      "recommendation_score": 0,
+      "suggested_days": 3,
+      "suggested_nights": 2,
+      "estimated_cost": {
+        "express": {
+          "available": true,
+          "one_way": 0,
+          "round_trip": 0,
+          "price_range": "",
+          "hotel": 0,
+          "food": 0,
+          "local_transport": 0,
+          "total_min": 0,
+          "total_max": 0,
+          "total_range": "",
+          "budget_status": "",
+          "remaining_budget": 0,
+          "extra_budget_needed": 0
+        },
+        "train": {
+          "available": false,
+          "one_way": 0,
+          "round_trip": 0,
+          "price_range": "",
+          "note": "",
+          "hotel": 0,
+          "food": 0,
+          "local_transport": 0,
+          "total_min": 0,
+          "total_max": 0,
+          "total_range": "",
+          "budget_status": "",
+          "remaining_budget": 0,
+          "extra_budget_needed": 0
+        },
+        "private_car": {
+          "available": true,
+          "distance_km": 0,
+          "fuel_cost": 0,
+          "toll_cost": 0,
+          "price_range": "",
+          "hotel": 0,
+          "food": 0,
+          "local_transport": 0,
+          "total_min": 0,
+          "total_max": 0,
+          "total_range": "",
+          "budget_status": "",
+          "remaining_budget": 0,
+          "extra_budget_needed": 0
+        }
+      },
+      "hotels": [
+        {
+          "name": "",
+          "price_range": "",
+          "description": ""
+        },
+        {
+          "name": "",
+          "price_range": "",
+          "description": ""
+        }
+      ],
+      "local_tips": [],
+      "packing_suggestions": []
+    }
+  ]
+}`;
+}
+
+/* =========================================================
+   AI စာသား ထုတ်ယူခြင်း
+========================================================= */
+
+function extractAIResponseText(data) {
+    try {
+        const choices = data.choices;
+        if (!Array.isArray(choices) || choices.length === 0) {
+            return null;
+        }
+        return (choices[0]?.message?.content || "").trim();
+    } catch (error) {
+        console.error("AI ထုတ်ယူမှု အမှား:", error);
+        return null;
+    }
+}
+
+/* =========================================================
+   JSON ဖတ်ခြင်း
+========================================================= */
+
+function parseAIJSON(text) {
+    let cleaned = String(text).trim();
+    cleaned = cleaned.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+
+    try {
+        return JSON.parse(cleaned);
+    } catch (firstError) {
+        const first = cleaned.indexOf("{");
+        const last = cleaned.lastIndexOf("}");
+        if (first >= 0 && last > first) {
+            const jsonText = cleaned.substring(first, last + 1);
+            try {
+                return JSON.parse(jsonText);
+            } catch (secondError) {
+                console.error("JSON ဖတ်မရ:", cleaned);
+                throw new Error("AI မှ JSON ပုံစံ မှားနေပါသည်။");
+            }
+        }
+        throw new Error("AI အဖြေထဲတွင် JSON မတွေ့ပါ။");
+    }
+}
+
+/* =========================================================
+   စစ်ဆေးခြင်း
+========================================================= */
+
+function validateAIResult(data) {
+    if (!data || typeof data !== "object") {
+        throw new Error("AI အဖြေ မမှန်ပါ။");
+    }
+    if (data.status && data.status !== "success") {
+        throw new Error("AI က အကြံပြုချက် မထုတ်ပေးနိုင်ပါ။");
+    }
+    if (!Array.isArray(data.recommendations)) {
+        throw new Error("အကြံပြုချက်များ မတွေ့ပါ။");
+    }
+    if (data.recommendations.length === 0) {
+        throw new Error("သင်၏ ဘတ်ဂျက်နှင့် ကိုက်ညီသော နေရာ မတွေ့ပါ။");
+    }
+    data.recommendations = data.recommendations.slice(0, 5);
+}
+
+/* =========================================================
+   အကြံပြုချက်များ ပြသခြင်း
+========================================================= */
+
+function renderRecommendations(recommendations) {
+    const container = document.getElementById("recommendationsContainer");
+    const count = document.getElementById("recommendationCount");
+
+    if (!container) return;
+    container.innerHTML = "";
+
+    if (!Array.isArray(recommendations)) return;
+
+    if (count) {
+        count.textContent = recommendations.length + " နေရာ";
+    }
+
+    window.smartTripRecommendations = recommendations;
+
+    recommendations.forEach(function (recommendation, index) {
+        const col = document.createElement("div");
+        col.className = "col-xl-4 col-lg-6";
+
+        const score = Number(recommendation.recommendation_score) || 0;
+        const cost = recommendation.estimated_cost || {};
+        const express = cost.express || {};
+        const train = cost.train || {};
+        const privateCar = cost.private_car || {};
+        const budgetStatus = getBestBudgetStatus(express, train, privateCar);
+
+        col.innerHTML = `
+            <div class="card shadow-sm h-100 recommendation-card" data-index="${index}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="badge bg-primary mb-2">#${index + 1}</span>
+                            <h4 class="mb-1">${escapeHTML(recommendation.destination || "Unknown")}</h4>
+                            <small class="text-muted">${escapeHTML(recommendation.type || "")}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="badge bg-success">⭐ ${score}%</div>
+                            <div class="small mt-1">${budgetStatus}</div>
+                        </div>
+                    </div>
+                    <p class="text-muted">${escapeHTML(recommendation.description || "")}</p>
+                    <div class="mb-3">
+                        <span class="badge bg-light text-dark">📅 ${escapeHTML(recommendation.suggested_days || 3)} ရက်</span>
+                        <span class="badge bg-light text-dark">🌙 ${escapeHTML(recommendation.suggested_nights || 2)} ည</span>
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold mb-3">💰 ခန့်မှန်းကုန်ကျစရိတ်</h6>
+                    <div class="cost-mini-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>🚌 ဘတ်စ်ကား</span>
+                            <strong>${escapeHTML(express.total_range || "N/A")}</strong>
+                        </div>
+                    </div>
+                    <div class="cost-mini-box mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>🚆 ရထား</span>
+                            <strong>${train.available !== false ? escapeHTML(train.total_range || "N/A") : "မရနိုင်ပါ"}</strong>
+                        </div>
+                    </div>
+                    <div class="cost-mini-box mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>🚗 ကိုယ်ပိုင်ကား</span>
+                            <strong>${escapeHTML(privateCar.total_range || "N/A")}</strong>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary w-100" onclick="selectRecommendationByIndex(${index})">
+                        📋 အသေးစိတ်ကြည့်ရန်
+                    </button>
+                </div>
+            </div>
+        `;
+        container.appendChild(col);
+    });
+}
+
+/* =========================================================
+   အကောင်းဆုံး ဘတ်ဂျက်အခြေအနေ
+========================================================= */
+
+function getBestBudgetStatus(express, train, privateCar) {
+    const statuses = [
+        express.budget_status,
+        train.budget_status,
+        privateCar.budget_status
+    ];
+
+    if (statuses.includes("within_budget")) {
+        return "✅ ဘတ်ဂျက်နှင့်ကိုက်";
+    }
+    if (statuses.includes("slightly_over_budget")) {
+        return "⚠️ ဘတ်ဂျက်အနီး";
+    }
+    return "❌ ဘတ်ဂျက်ကျော်";
+}
+
+/* =========================================================
+   ရွေးချယ်ခြင်း
+========================================================= */
+
+function selectRecommendationByIndex(index) {
+    const cards = document.querySelectorAll(".recommendation-card");
+    if (cards[index]) {
+        cards[index].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    if (window.smartTripRecommendations && window.smartTripRecommendations[index]) {
+        selectRecommendation(window.smartTripRecommendations[index]);
+    }
+}
+
+/* =========================================================
+   အသေးစိတ်ပြသခြင်း
+========================================================= */
+
+function selectRecommendation(recommendation) {
+    if (!recommendation) return;
+
+    selectedRecommendation = recommendation;
+    const section = document.getElementById("selectedDestinationSection");
+    if (!section) return;
+
+    section.style.display = "block";
+
+    setText("selectedDestinationName", recommendation.destination);
+    setText("selectedDestinationDescription", recommendation.description);
+
+    const meta = document.getElementById("selectedDestinationMeta");
+    if (meta) {
+        meta.innerHTML = `
+            <span class="badge bg-primary me-2">⭐ ${escapeHTML(recommendation.recommendation_score || 0)}% ကိုက်ညီမှု</span>
+            <span class="badge bg-info me-2">📅 ${escapeHTML(recommendation.suggested_days || 3)} ရက်</span>
+            <span class="badge bg-secondary me-2">🌙 ${escapeHTML(recommendation.suggested_nights || 2)} ည</span>
+        `;
+    }
+
+    renderCostComparison(recommendation);
+    renderHotels(recommendation.hotels);
+    renderSimpleList("tipsList", recommendation.local_tips);
+    renderSimpleList("packingList", recommendation.packing_suggestions);
+
+    setTimeout(function () {
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+}
+
+/* =========================================================
+   ကုန်ကျစရိတ် နှိုင်းယှဉ်ခြင်း
+========================================================= */
+
+function renderCostComparison(recommendation) {
+    const container = document.getElementById("costComparisonContainer");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const costs = recommendation.estimated_cost || {};
+    const express = costs.express || {};
+    const train = costs.train || {};
+    const privateCar = costs.private_car || {};
+
+    container.appendChild(createTransportCostCard("🚌", "ဘတ်စ်ကား / Express", express, "primary"));
+    container.appendChild(createTransportCostCard("🚆", "ရထား", train, "success"));
+    container.appendChild(createTransportCostCard("🚗", "ကိုယ်ပိုင်ကား", privateCar, "warning"));
+}
+
+/* =========================================================
+   သယ်ယူပို့ဆောင်ရေး ကတ်
+========================================================= */
+
+function createTransportCostCard(icon, title, data, color) {
+    const col = document.createElement("div");
+    col.className = "col-lg-4";
+
+    const available = data.available !== false;
+    const total = available ? (data.total_range || "N/A") : "မရနိုင်ပါ";
+    const budgetStatus = available ? formatBudgetStatus(data.budget_status) : "";
+
+    let extraHTML = "";
+
+    /* ကိုယ်ပိုင်ကား */
+    if (title === "ကိုယ်ပိုင်ကား" && available) {
+        extraHTML = `
+            <div class="small mb-2">
+                📏 အကွာအဝေး: <strong>${escapeHTML(data.distance_km || "N/A")} ကီလိုမီတာ</strong>
+            </div>
+            <div class="small mb-2">
+                ⛽ လောင်စာ: <strong>${formatMMK(data.fuel_cost)}</strong>
+            </div>
+            <div class="small mb-2">
+                🛣️ တoll: <strong>${formatMMK(data.toll_cost)}</strong>
+            </div>
+        `;
+    }
+
+    /* ရထား */
+    if (title === "ရထား" && !available) {
+        extraHTML = `
+            <div class="alert alert-warning py-2">
+                ${escapeHTML(data.note || "ရထားဖြင့် သွားလာရန် မသင့်တော်ပါ။")}
+            </div>
+        `;
+    }
+
+    col.innerHTML = `
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-${color} ${color === "warning" ? "text-dark" : "text-white"}">
+                <strong>${icon} ${title}</strong>
+            </div>
+            <div class="card-body">
+                ${available ? `
+                    <div class="mb-3">
+                        <small class="text-muted">သယ်ယူပို့ဆောင်ရေးစရိတ်</small>
+                        <h5>${escapeHTML(data.price_range || "N/A")}</h5>
+                    </div>
+                ` : ""}
+                ${extraHTML}
+                ${available ? `
+                    <hr>
+                    <div class="mb-2">
+                        <small class="text-muted">🏨 ဟိုတယ် (၂ ည)</small>
+                        <div class="fw-semibold">${formatRangeDisplay(data.hotel)}</div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">🍽️ စားသောက်စရိတ် (၃ ရက်)</small>
+                        <div class="fw-semibold">${formatRangeDisplay(data.food)}</div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">🛵 ဒေသသွားလာရေး (၃ ရက်)</small>
+                        <div class="fw-semibold">${formatRangeDisplay(data.local_transport)}</div>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <small class="text-muted">💰 စုစုပေါင်း ခန့်မှန်းကုန်ကျစရိတ်</small>
+                        <h4 class="text-success">${escapeHTML(total)}</h4>
+                        <div class="small text-muted">(အနည်းဆုံး - အများဆုံး ခန့်မှန်းချက်)</div>
+                    </div>
+                    <div>${budgetStatus}</div>
+                ` : ""}
+            </div>
+        </div>
+    `;
+
+    return col;
+}
+
+/* =========================================================
+   အကွာအဝေး ပြသခြင်း
+========================================================= */
+
+function formatRangeDisplay(value) {
+    if (value === undefined || value === null || value === "") {
+        return "N/A";
+    }
+
+    if (typeof value === "string" && value.includes("-")) {
+        return value;
+    }
+
+    if (typeof value === "number" && !isNaN(value)) {
+        return formatMMK(value);
+    }
+
+    if (typeof value === "string" && !isNaN(value)) {
+        return formatMMK(parseFloat(value));
+    }
+
+    return "N/A";
+}
+
+/* =========================================================
+   ဘတ်ဂျက်အခြေအနေ
+========================================================= */
+
+function formatBudgetStatus(status) {
+    if (status === "within_budget") {
+        return `<span class="badge bg-success">✅ ဘတ်ဂျက်အတွင်း</span>`;
+    }
+    if (status === "slightly_over_budget") {
+        return `<span class="badge bg-warning text-dark">⚠️ ဘတ်ဂျက်အနည်းငယ်ကျော်</span>`;
+    }
+    if (status === "over_budget") {
+        return `<span class="badge bg-danger">❌ ဘတ်ဂျက်ကျော်</span>`;
+    }
+    return `<span class="badge bg-secondary">ဘတ်ဂျက်အခြေအနေ မသိရ</span>`;
+}
+
+/* =========================================================
+   ဟိုတယ်များ
+========================================================= */
+
+function renderHotels(hotels) {
+    const container = document.getElementById("hotelList");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!Array.isArray(hotels) || hotels.length === 0) {
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-info">ဟိုတယ် အကြံပြုချက် မရရှိပါ။</div>
+            </div>
+        `;
+        return;
+    }
+
+    hotels.forEach(function (hotel) {
+        const col = document.createElement("div");
+        col.className = "col-lg-4 col-md-6";
+        col.innerHTML = `
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5>🏨 ${escapeHTML(hotel.name || "ဘတ်ဂျက်ဟိုတယ်")}</h5>
+                    <div class="text-success fw-bold mb-2">💰 ${escapeHTML(hotel.price_range || "N/A")}</div>
+                    <p class="text-muted mb-0">${escapeHTML(hotel.description || "")}</p>
+                </div>
+            </div>
+        `;
+        container.appendChild(col);
+    });
+}
+
+/* =========================================================
+   စာရင်းပြသခြင်း
+========================================================= */
+
+function renderSimpleList(elementId, items) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    element.innerHTML = "";
+
+    if (!Array.isArray(items) || items.length === 0) {
+        element.innerHTML = `<li class="list-group-item text-muted">အချက်အလက် မရရှိပါ။</li>`;
+        return;
+    }
+
+    items.forEach(function (item) {
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+        li.textContent = String(item);
+        element.appendChild(li);
+    });
+}
+
+/* =========================================================
+   မြေပုံအတွက် နေရာရှာခြင်း
+========================================================= */
+
+async function geocodePlace(place) {
+    try {
+        const url = "https://nominatim.openstreetmap.org/search" +
+            "?format=json" +
+            "&q=" + encodeURIComponent(place + ", Myanmar") +
+            "&limit=1";
+
+        const response = await fetch(url, {
+            headers: { "Accept": "application/json" }
+        });
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lng = parseFloat(data[0].lon);
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                return { lat: lat, lng: lng };
+            }
+        }
+        return null;
+    } catch (error) {
+        console.warn("နေရာရှာမှု အမှား:", error);
+        return null;
+    }
+}
+
+/* =========================================================
+   မြေပုံ
+========================================================= */
+
+async function populateRecommendationMap(origin, recommendations) {
+    const mapElement = document.getElementById("map");
+    if (!mapElement) return;
+
+    destroyMap();
+
+    const originCoord = await geocodePlace(origin);
+    const destinationCoords = [];
+
+    if (Array.isArray(recommendations)) {
+        for (const recommendation of recommendations) {
+            const coord = await geocodePlace(recommendation.destination);
+            if (coord) {
+                destinationCoords.push({
+                    name: recommendation.destination,
+                    lat: coord.lat,
+                    lng: coord.lng
+                });
+            }
+        }
+    }
+
+    let centerLat = 16.8661;
+    let centerLng = 96.1951;
+
+    if (originCoord) {
+        centerLat = originCoord.lat;
+        centerLng = originCoord.lng;
+    } else if (destinationCoords.length > 0) {
+        centerLat = destinationCoords[0].lat;
+        centerLng = destinationCoords[0].lng;
+    }
+
+    mapInstance = L.map(mapElement, {
+        center: [centerLat, centerLng],
+        zoom: 6
+    });
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            attribution: "&copy; OpenStreetMap ပံ့ပိုးသူများ",
+            maxZoom: 19
+        }
+    ).addTo(mapInstance);
+
+    const markers = [];
+
+    /* မူရင်းမြို့ */
+    if (originCoord) {
+        const marker = L.marker([originCoord.lat, originCoord.lng])
+            .addTo(mapInstance)
+            .bindPopup("<strong>📍 ထွက်ခွာမည့်မြို့</strong><br>" + escapeHTML(origin));
+        markers.push(marker);
+    }
+
+    /* နေရာများ */
+    for (const place of destinationCoords) {
+        const marker = L.marker([place.lat, place.lng])
+            .addTo(mapInstance)
+            .bindPopup("<strong>🏝️ " + escapeHTML(place.name) + "</strong>");
+        markers.push(marker);
+    }
+
+    if (markers.length > 1) {
+        const group = L.featureGroup(markers);
+        mapInstance.fitBounds(group.getBounds(), { padding: [40, 40] });
+    }
+
+    setTimeout(function () {
+        if (mapInstance) {
+            mapInstance.invalidateSize();
+        }
+    }, 300);
+}
+
+/* =========================================================
+   မြေပုံ ဖျက်ခြင်း
+========================================================= */
+
+function destroyMap() {
+    const mapElement = document.getElementById("map");
+    if (!mapElement) return;
+
+    if (mapInstance) {
+        try {
+            mapInstance.off();
+            mapInstance.remove();
+        } catch (error) {
+            console.warn("မြေပုံ ရှင်းလင်းမှု:", error);
+        }
+        mapInstance = null;
+    }
+
+    try {
+        if (mapElement._leaflet_id) {
+            delete mapElement._leaflet_id;
+        }
+    } catch (error) {
+        console.warn("Leaflet ရှင်းလင်းမှု:", error);
+    }
+
+    mapElement.innerHTML = "";
+}
+
+/* =========================================================
+   စာသားသတ်မှတ်ခြင်း
+========================================================= */
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.textContent = value !== undefined && value !== null && value !== "" ? String(value) : "N/A";
+}
+
+/* =========================================================
+   MMK ပုံစံ
+========================================================= */
+
+function formatMMK(value) {
+    if (value === undefined || value === null || value === "") {
+        return "N/A";
+    }
+    if (typeof value === "string") {
+        return value;
+    }
+    const number = Number(value);
+    if (!Number.isFinite(number)) {
+        return "N/A";
+    }
+    return number.toLocaleString("en-US") + " ကျပ်";
+}
+
+/* =========================================================
+   ခရီးသွားအမျိုးအစား ပုံစံ
+========================================================= */
+
+function formatTravelType(value) {
+    const types = {
+        all: "🌏 အားလုံး",
+        beach: "🏖️ ကမ်းခြေ",
+        nature: "🌳 သဘာဝ",
+        cultural: "🏛️ ယဉ်ကျေးမှု",
+        city: "🏙️ မြို့ပြ",
+        adventure: "🧗 စွန့်စားခန်း",
+        family: "👨‍👩‍👧 မိသားစု"
+    };
+    return types[value] || value || "Any";
+}
+
+/* =========================================================
+   HTML ကာကွယ်ခြင်း
+========================================================= */
+
+function escapeHTML(value) {
+    const div = document.createElement("div");
+    div.textContent = String(value ?? "");
+    return div.innerHTML;
+}
+
+/* =========================================================
+   အမှားပြသခြင်း
+========================================================= */
+
+function showError(message) {
+    const errorBox = document.getElementById("errorBox");
+    if (!errorBox) {
+        alert("❌ " + message);
+        return;
+    }
+    errorBox.textContent = "❌ " + message;
+    errorBox.style.display = "block";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function hideError() {
+    const errorBox = document.getElementById("errorBox");
+    if (errorBox) {
+        errorBox.textContent = "";
+        errorBox.style.display = "none";
+    }
+}
+
+/* =========================================================
+   DOM အဆင်သင့်
+========================================================= */
+
+document.addEventListener("DOMContentLoaded", function () {
+    console.log("✅ SmartTrip AI Planner အဆင်သင့်ဖြစ်ပါပြီ။");
+
+    const button = document.getElementById("planTripButton");
+    if (!button) {
+        console.error("❌ Plan Trip ခလုတ် မတွေ့ပါ။");
+        return;
+    }
+
+    button.addEventListener("click", planTrip);
+    console.log("✅ SmartTrip event listener အဆင်သင့်ဖြစ်ပါပြီ။");
+});
+
+/* =========================================================
+   Enter ခလုတ်
+========================================================= */
+
+document.addEventListener("keydown", function (event) {
+    if (event.key !== "Enter") return;
+
+    const active = document.activeElement;
+    if (!active) return;
+
+    const allowedInputs = ["originInput", "budgetInput", "travelTypeInput"];
+    if (allowedInputs.includes(active.id)) {
+        event.preventDefault();
+        const button = document.getElementById("planTripButton");
+        if (button && !button.disabled) {
+            planTrip(event);
+        }
+    }
+});
+</script>
+
+<!-- =========================================================
+     CSS
+========================================================= -->
+
+<style>
+#map {
+    width: 100%;
+    height: 450px;
+    border-radius: 0 0 8px 8px;
+}
+
+.card {
+    border-radius: 10px;
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+.recommendation-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+}
+
+.cost-mini-box {
+    padding: 10px 12px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+#loadingIndicator .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+#errorBox {
+    white-space: pre-line;
+}
+
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+/* API font size ကြီးပေးရန် */
+.api-font-size {
+    font-size: 1.25rem; /* Default 1rem -> 1.25rem (20px) */
+}
+
+/* API နှင့်သက်ဆိုင်သော စာသားများ အားလုံးအတွက် */
+.result-text {
+    font-size: 1.2rem;
+}
+
+#resultOrigin,
+#resultBudget,
+#resultTravelType {
+    font-size: 1.5rem;
+}
+
+#selectedDestinationName {
+    font-size: 2rem;
+}
+
+#selectedDestinationDescription {
+    font-size: 1.25rem;
+}
+
+.cost-mini-box strong {
+    font-size: 1.1rem;
+}
+
+.card-body h5 {
+    font-size: 1.3rem;
+}
+
+.card-body h4 {
+    font-size: 1.5rem;
+}
+
+.list-group-item {
+    font-size: 1.15rem;
+}
+</style>
+
+{% endblock %}

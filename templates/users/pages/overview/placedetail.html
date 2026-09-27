@@ -1,0 +1,410 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - {{ place.name }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+<style>
+    .star-rating {
+        color: #ffc107;
+        font-size: 1.2rem;
+    }
+
+    .empty-star {
+        color: #e4e5e9;
+    }
+
+    #mini-map {
+        height: 450px;
+        width: 1200px;
+        border-radius: 15px;
+        z-index: 1;
+    }
+
+    .leaflet-routing-container {
+        background-color: #ffffff;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+        margin-top: 15px;
+        max-height: 250px;
+        overflow-y: auto;
+        font-family: inherit;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 mx-auto" style="max-width: 1200px;">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a href="{{ url_for('user.places_page') }}"
+                            class="text-decoration-none">Destinations</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ place.name }}</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold text-dark mb-1">{{ place.name }}</h2>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <p class="text-muted mb-0 me-2">⭐ 4.8 | 👁️ {{ place.view_count }} views | 📍 Destination</p>
+
+                <!-- Like Button -->
+                <button type="button" id="likeBtn"
+                    class="btn btn-sm {% if user_liked %}btn-danger text-white{% else %}btn-outline-danger{% endif %} rounded-pill px-3 d-flex align-items-center gap-1">
+                    ❤️ <span id="likeCount">{{ place.likes | length if place.likes is iterable and place.likes is not
+                        string else 0 }}</span> Likes
+                </button>
+
+                <!-- Favorite Button -->
+                <button type="button" id="favBtn"
+                    class="btn btn-sm {% if user_favorited %}btn-warning text-dark fw-semibold{% else %}btn-outline-warning text-dark{% endif %} rounded-pill px-3 d-flex align-items-center gap-1">
+                    ⭐ <span id="favText">{% if user_favorited %}Favorited{% else %}Favorite{% endif %}</span>
+                </button>
+
+                <!-- Report Button -->
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-toggle="modal"
+                    data-bs-target="#reportModal">
+                    ⚠️ Report
+                </button>
+            </div>
+        </div>
+       
+    </div>
+
+    <!-- Hero Image -->
+    <div class="mb-5 shadow-sm rounded-4 overflow-hidden" style="height: 400px;">
+        <img src="{{ url_for('static', filename='uploads/' + place.image_file) }}"
+            onerror="this.src='https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80'"
+            class="w-100 h-100 object-fit-cover" alt="{{ place.name }}">
+    </div>
+
+    <div class="row g-5">
+        <div class="col-lg-8">
+            <h4 class="fw-bold mb-3"> {{ place.name }}</h4>
+            <p class="text-muted justify-content-between lh-lg mb-5">
+                {{ place.description or "No description available for this destination yet." }}
+            </p>
+
+            <h4 class="fw-bold mb-3">Location & Turn-by-Turn Route</h4>
+            <p class="text-muted small mb-3">Allow location access to view live directions, distance, and turn
+                instructions from your position.</p>
+            <div id="mini-map" class="shadow-sm border mb-4"></div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Travel Options</h5>
+
+                    <!-- <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fs-5">🚌</span> <span>Bus Fare</span>
+                        </div>
+                        <span class="fw-medium">{{ place.bus_fare }}MMK</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fs-5">🚆</span> <span>Train Fare</span>
+                        </div>
+                        <span class="fw-medium">{{ place.train_fare }}MMK</span>
+                    </div> -->
+
+                    <!-- <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fs-5">🚕</span> <span>Taxi Fare</span>
+                        </div>
+                        <span class="fw-medium">{{ place.taxi_fare }}MMK</span>
+                    </div> -->
+
+                    {% if place.package %}
+                    <div class="mt-4 p-3 bg-light rounded-3">
+                        <small class="text-muted d-block mb-1">Travel Type</small>
+                        <span class="fw-bold">{{ place.package }}</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- {% if place.phone_number %}
+                    <div class="mt-3">
+                        <a href="tel:{{ place.phone_number }}" class="btn btn-dark w-100 rounded-pill py-2">
+                            📞 Contact: {{ place.phone_number }}
+                        </a>
+                    </div>
+                    {% endif %} -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reviews & Feedback Section -->
+    <div class="row mt-5 pt-4 border-top">
+        <div class="col-12 mb-3">
+            <h3 class="fw-bold">Reviews & Feedback</h3>
+        </div>
+
+        <!-- LEFT COLUMN: Comments -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm bg-white rounded-4 mb-4 p-4 border">
+                <h5 class="fw-bold mb-3 text-dark">Leave a Comment / Question</h5>
+                <form action="{{ url_for('user.add_comment', place_id=place.id) }}" method="POST">
+                    <div class="mb-3">
+                        <textarea class="form-control bg-light rounded-3 border-0 p-3" rows="3" name="comment_text"
+                            placeholder="Ask a question or leave a public comment..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-dark rounded-pill px-4 shadow-sm">Post Comment</button>
+                </form>
+            </div>
+
+            <h5 class="fw-bold mb-3">User Comments</h5>
+            <div class="d-flex flex-column gap-3 mb-5">
+                {% if place.comments %}
+                {% for comment in place.comments %}
+                <div class="d-flex gap-3 p-3 bg-light rounded-4 shadow-sm align-items-center">
+                    <!-- User Profile Picture -->
+                    <img src="{{ url_for('static', filename='uploads/' + comment.user.profile_pic) if comment.user and comment.user.profile_pic else url_for('static', filename='images/default_avatar.png') }}"onerror="this.src='{{ url_for('static', filename='images/default_avatar.png') }}'"
+                        class="rounded-circle object-fit-cover flex-shrink-0 border" style="width: 45px; height: 45px;"
+                        alt="Avatar">
+
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="fw-bold text-dark">{{ comment.user.username if comment.user else 'Anonymous
+                                User' }}</span>
+                            <span class="text-muted small">• {{ comment.created_at.strftime('%b %d, %Y') if
+                                comment.created_at else 'Recent' }}</span>
+                        </div>
+                        <p class="text-muted mb-0 small">{{ comment.content }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted small">No comments yet. Be the first to start the conversation!</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Ratings -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm bg-white rounded-4 mb-4 p-4 border">
+                <h5 class="fw-bold mb-3 text-dark">Leave a Rating & Review</h5>
+
+                {% set current_user_rating = [] %}
+                {% if g.user %}
+                {% for r in place.ratings %}
+                {% if r.user_id == g.user.id %}
+                {{ current_user_rating.append(r.stars) }}
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+
+                <form action="{{ url_for('user.add_review', place_id=place.id) }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">
+                            {% if current_user_rating %}
+                            Update Your Rating Score (Current: {{ current_user_rating[0] }} ⭐)
+                            {% else %}
+                            Select Rating Score
+                            {% endif %}
+                        </label>
+                        <select class="form-select rounded-pill" name="rating">
+                            <option value="5" {% if current_user_rating and current_user_rating[0]==5 %}selected{% endif
+                                %}>⭐⭐⭐⭐⭐ (5/5 Excellent)</option>
+                            <option value="4" {% if current_user_rating and current_user_rating[0]==4 %}selected{% endif
+                                %}>⭐⭐⭐⭐ (4/5 Very Good)</option>
+                            <option value="3" {% if current_user_rating and current_user_rating[0]==3 %}selected{% endif
+                                %}>⭐⭐⭐ (3/5 Average)</option>
+                            <option value="2" {% if current_user_rating and current_user_rating[0]==2 %}selected{% endif
+                                %}>⭐⭐ (2/5 Poor)</option>
+                            <option value="1" {% if current_user_rating and current_user_rating[0]==1 %}selected{% endif
+                                %}>⭐ (1/5 Terrible)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-warning text-dark fw-semibold rounded-pill px-4 shadow-sm">
+                        {% if current_user_rating %}Update Rating{% else %}Submit Review{% endif %}
+                    </button>
+                </form>
+            </div>
+
+            <h5 class="fw-bold mb-3">User Ratings</h5>
+            <div class="d-flex flex-column gap-2">
+                {% if place.ratings %}
+                {% for rating in place.ratings %}
+                <div class="p-3 bg-light rounded-4 shadow-sm d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold text-dark small">{{ rating.user.username if rating.user else 'User'
+                        }}</span>
+                    <span class="text-warning small">
+                        {% for i in range(rating.stars) %}⭐{% endfor %}
+                    </span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted small">No ratings yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Report Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="reportModalLabel">⚠️ Report Destination</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('user.submit_report', place_id=place.id) }}" method="POST">
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-muted">Reason for Reporting</label>
+                        <select class="form-select rounded-pill" name="reason" required>
+                            <option value="" disabled selected>Select a reason...</option>
+                            <option value="Incorrect Location / Coordinates">Incorrect Location / Coordinates</option>
+                            <option value="Closed / No Longer Exists">Closed / No Longer Exists</option>
+                            <option value="Inaccurate Information / Pricing">Inaccurate Information / Pricing</option>
+                            <option value="Inappropriate Content">Inappropriate Content</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small fw-semibold text-muted">Additional Details (Optional)</label>
+                        <textarea class="form-control rounded-3" name="details" rows="3"
+                            placeholder="Provide extra context to help our administrators..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Submit Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const destLat = parseFloat("{{ place.latitude or 0 }}");
+        const destLng = parseFloat("{{ place.longitude or 0 }}");
+
+        const map = L.map('mini-map').setView([destLat, destLng], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const destIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        L.marker([destLat, destLng], { icon: destIcon })
+            .addTo(map)
+            .bindPopup("<b>{{ place.name }}</b><br>Destination")
+            .openPopup();
+
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+
+                    L.Routing.control({
+                        waypoints: [
+                            L.latLng(userLat, userLng),
+                            L.latLng(destLat, destLng)
+                        ],
+                        routeWhileDragging: false,
+                        showAlternatives: false,
+                        addWaypoints: false,
+                        fitSelectedRoutes: true,
+                        show: true
+                    }).addTo(map);
+
+                    L.marker([userLat, userLng])
+                        .addTo(map)
+                        .bindPopup("<b>Your Location</b>");
+                },
+                function (error) {
+                    console.log("Geolocation error/denied: ", error.message);
+                }
+            );
+        }
+
+        // Like Button AJAX
+        const likeBtn = document.getElementById('likeBtn');
+        if (likeBtn) {
+            likeBtn.addEventListener('click', function () {
+                fetch("{{ url_for('user.toggle_like', place_id=place.id) }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('likeCount').innerText = data.likes_count;
+                            if (data.liked) {
+                                likeBtn.classList.remove('btn-outline-danger');
+                                likeBtn.classList.add('btn-danger', 'text-white');
+                            } else {
+                                likeBtn.classList.remove('btn-danger', 'text-white');
+                                likeBtn.classList.add('btn-outline-danger');
+                            }
+                        }
+                    }).catch(err => console.log('Like action error:', err));
+            });
+        }
+
+        // Favorite Button AJAX
+        const favBtn = document.getElementById('favBtn');
+        const favText = document.getElementById('favText');
+        if (favBtn) {
+            favBtn.addEventListener('click', function () {
+                fetch("{{ url_for('user.toggle_favorite', place_id=place.id) }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.favorited) {
+                                favText.innerText = "Favorited";
+                                favBtn.classList.remove('btn-outline-warning');
+                                favBtn.classList.add('btn-warning', 'text-dark', 'fw-semibold');
+                            } else {
+                                favText.innerText = "Favorite";
+                                favBtn.classList.remove('btn-warning', 'fw-semibold');
+                                favBtn.classList.add('btn-outline-warning', 'text-dark');
+                            }
+                        }
+                    }).catch(err => console.log('Favorite action error:', err));
+            });
+        }
+    });
+</script>
+{% endblock %}

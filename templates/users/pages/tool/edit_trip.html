@@ -1,0 +1,386 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Edit Trip Plan & Real Nav{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+<style>
+    .map-container {
+        height: 900px;
+        border-radius: 16px;
+        z-index: 1;
+    }
+
+    .sequence-badge {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        border: 2px solid #000;
+    }
+
+    .knn-card {
+        border-left: 4px solid #ffc107;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .knn-card:hover {
+        background-color: #fff3cd !important;
+        transform: translateX(3px);
+    }
+
+    .leaflet-routing-container {
+        max-height: 200px;
+        overflow-y: auto;
+        opacity: 0.95;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 mx-auto" style="max-width: 1300px;">
+    <div class="row g-4">
+        <!-- Form Column (Left Side) -->
+        <div class="col-lg-4">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <form action="/trip/edit/{{ trip.id }}" method="POST" id="tripForm">
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Trip Title</label>
+                            <input type="text" name="title" value="{{ trip.title }}"
+                                class="form-control bg-light border-0 rounded-pill px-3 py-2"
+                                placeholder="e.g., Yangon Food & Culture Tour" required>
+                        </div>
+
+                        <!-- Starting Point -->
+                        <div class="mb-3 p-3 bg-light rounded-4 border">
+                            <p class="small text-muted mb-2" id="location-status">Using GPS / Custom starting point</p>
+                            <input type="hidden" name="start_lat" id="start_lat" value="{{ trip.start_lat }}">
+                            <input type="hidden" name="start_lng" id="start_lng" value="{{ trip.start_lng }}">
+                            <button type="button" class="btn btn-sm btn-dark rounded-pill w-100"
+                                onclick="getUserLocation()">
+                                🎯 Update to Current GPS
+                            </button>
+                        </div>
+
+                        <!-- Dynamic Waypoints (Places + Restaurants) -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-0">Waypoints &
+                                    Restos</label>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2"
+                                    onclick="addWaypoint()">+ Add Stop</button>
+                            </div>
+                            <div id="waypoints-container" class="d-flex flex-column gap-2"></div>
+                        </div>
+
+                        <!-- Final Destination -->
+                        <div class="mb-3 p-3 bg-warning bg-opacity-10 rounded-4 border border-warning">
+                            <label class="form-label small fw-bold text-dark text-uppercase">🏁 Final
+                                Destination</label>
+                            <select name="dest_place_id" id="dest_place"
+                                class="form-select border-0 bg-white rounded-pill px-3 py-2 shadow-sm location-select"
+                                required>
+                                <option value="" disabled>Select Destination Place...</option>
+                                {% for loc in locations %}
+                                {% if loc.type == 'place' %}
+                                <option value="{{ loc.real_id }}" data-id="{{ loc.id }}" data-lat="{{ loc.lat }}"
+                                    data-lng="{{ loc.lng }}" data-name="{{ loc.name }}" {% if
+                                    trip.dest_place_id==loc.real_id %}selected{% endif %}>
+                                    {{ loc.name }}
+                                </option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- KNN Recommendation Box -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-muted text-uppercase">🤖 KNN AI Suggestions
+                                (Closest Next Stops)</label>
+                            <div id="knn-suggestions" class="d-flex flex-column gap-2">
+                                <span class="text-muted small italic">Select a location to view nearest
+                                    recommendations...</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit"
+                                class="btn btn-primary flex-grow-1 rounded-pill py-3 fw-bold text-dark shadow-sm"
+                                style="background-color: #ffc107; border: none;">
+                                Update Trip & Route
+                            </button>
+                            <a href="{{ url_for('user.itineraries_page') }}"
+                                class="btn btn-outline-secondary rounded-pill py-3 px-4 fw-bold">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Map (Right Side) -->
+        <div class="col-lg-8">
+            <div class="card card-custom border-0 shadow-sm p-2">
+                <div id="map" class="map-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Waypoint Row Template
+<template id="waypoint-template">
+    <div class="d-flex gap-2 waypoint-row align-items-center">
+        <span class="sequence-badge bg-light text-dark shadow-sm stop-number"></span>
+        <select name="waypoints[]"
+            class="form-select border-0 bg-light rounded-pill px-3 location-select waypoint-select">
+            <option value="" selected disabled>Choose stop or click map marker...</option>
+            {% for loc in locations %}
+            <option value="{{ loc.id }}" data-id="{{ loc.id }}" data-lat="{{ loc.lat }}" data-lng="{{ loc.lng }}"
+                data-name="{{ loc.name }}">
+                {% if loc.type == 'restaurant' %}🍽️{% else %}📍{% endif %} {{ loc.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="button" class="btn btn-sm btn-danger rounded-circle text-white p-0"
+            style="width: 32px; height: 32px;" onclick="removeWaypoint(this)">×</button>
+    </div>
+</template> -->
+
+<script>
+    const allLocations = {{ locations_json | safe }};
+    const existingWaypoints = {{ existing_waypoints | tojson | safe }};
+    let map;
+    let routingControl = null;
+    let locationMarkers = [];
+    let waypointCount = 0;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const startLat = parseFloat(document.getElementById('start_lat').value);
+        const startLng = parseFloat(document.getElementById('start_lng').value);
+
+        // 1. Initialize Leaflet Map
+        map = L.map('map').setView([startLat, startLng], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        // 2. Render all places and restaurants on map as interactive markers
+        renderAllMapMarkers();
+
+        // 3. Pre-load existing waypoints or add a blank one if none exist
+        if (existingWaypoints && existingWaypoints.length > 0) {
+            existingWaypoints.forEach(wpId => {
+                addWaypoint(wpId);
+            });
+        } else {
+            addWaypoint();
+        }
+
+        // 4. Update route when selects change (Explicitly bind change tracking)
+        document.getElementById('tripForm').addEventListener('change', function (e) {
+            if (e.target.classList.contains('location-select')) {
+                updateMapRouteAndKNN();
+            }
+        });
+
+        updateMapRouteAndKNN();
+    });
+
+    function renderAllMapMarkers() {
+        allLocations.forEach(loc => {
+            const isResto = loc.type === 'restaurant';
+            const markerColor = isResto ? '#dc3545' : '#0d6efd';
+
+            const customIcon = L.divIcon({
+                className: 'custom-map-pin',
+                html: `<div style="background:${markerColor}; color:#fff; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3); font-size:12px;">${isResto ? '🍽️' : '📍'}</div>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+
+            const marker = L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(map);
+
+            const popupContent = `
+                <div class="text-center p-1">
+                    <h6 class="fw-bold mb-1">${loc.name}</h6>
+                    <span class="badge ${isResto ? 'bg-danger' : 'bg-primary'} mb-2">${loc.type.toUpperCase()}</span><br>
+                    <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-1 mt-1" onclick="selectLocationFromMap('${loc.id}')">
+                        + Add to Route
+                    </button>
+                </div>
+            `;
+            marker.bindPopup(popupContent);
+            locationMarkers.push(marker);
+        });
+    }
+
+    function selectLocationFromMap(locId) {
+        let targetSelect = null;
+        const selects = document.querySelectorAll('.waypoint-select');
+
+        for (let sel of selects) {
+            if (!sel.value) {
+                targetSelect = sel;
+                break;
+            }
+        }
+
+        if (!targetSelect) {
+            addWaypoint();
+            const newSelects = document.querySelectorAll('.waypoint-select');
+            targetSelect = newSelects[newSelects.length - 1];
+        }
+
+        targetSelect.value = locId;
+        map.closePopup();
+        updateMapRouteAndKNN();
+    }
+
+    // Dynamically build waypoint row and options via JS (fixes empty dropdown bug)
+    function addWaypoint(selectedVal = null) {
+        waypointCount++;
+        
+        // Build options dropdown list from allLocations JSON
+        let optionsHtml = '<option value="" selected disabled>Choose stop or click map marker...</option>';
+        allLocations.forEach(loc => {
+            const icon = loc.type === 'restaurant' ? '🍽️' : '📍';
+            optionsHtml += `<option value="${loc.id}" data-id="${loc.id}" data-lat="${loc.lat}" data-lng="${loc.lng}" data-name="${loc.name}">
+                ${icon} ${loc.name}
+            </option>`;
+        });
+
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'd-flex gap-2 waypoint-row align-items-center mb-2';
+        rowDiv.innerHTML = `
+            <span class="sequence-badge bg-light text-dark shadow-sm stop-number">${waypointCount}</span>
+            <select name="waypoints[]" class="form-select border-0 bg-light rounded-pill px-3 location-select waypoint-select">
+                ${optionsHtml}
+            </select>
+            <button type="button" class="btn btn-sm btn-danger rounded-circle text-white p-0" style="width: 32px; height: 32px;" onclick="removeWaypoint(this)">×</button>
+        `;
+
+        document.getElementById('waypoints-container').appendChild(rowDiv);
+
+        // Set value if editing an existing trip
+        if (selectedVal) {
+            const selectElem = rowDiv.querySelector('.waypoint-select');
+            selectElem.value = selectedVal;
+        }
+    }
+
+    function removeWaypoint(btn) {
+        btn.closest('.waypoint-row').remove();
+        waypointCount = 0;
+        document.querySelectorAll('.stop-number').forEach(badge => {
+            waypointCount++;
+            badge.textContent = waypointCount;
+        });
+        updateMapRouteAndKNN();
+    }
+
+    // Real OSRM Road Routing + KNN Query based on the latest active stop
+    function updateMapRouteAndKNN() {
+        const waypoints = [];
+
+        // 1. Start Location
+        const startLat = parseFloat(document.getElementById('start_lat').value);
+        const startLng = parseFloat(document.getElementById('start_lng').value);
+        waypoints.push(L.latLng(startLat, startLng));
+
+        // Track current origin point for KNN suggestions
+        let knnTargetLat = startLat;
+        let knnTargetLng = startLng;
+
+        // 2. Intermediate Stops
+        const waypointSelects = document.querySelectorAll('.waypoint-select');
+        waypointSelects.forEach(select => {
+            const opt = select.options[select.selectedIndex];
+            if (opt && opt.value) {
+                const lat = parseFloat(opt.getAttribute('data-lat'));
+                const lng = parseFloat(opt.getAttribute('data-lng'));
+                waypoints.push(L.latLng(lat, lng));
+
+                knnTargetLat = lat;
+                knnTargetLng = lng;
+            }
+        });
+
+        // 3. Destination Point
+        const destSelect = document.getElementById('dest_place');
+        const destOpt = destSelect.options[destSelect.selectedIndex];
+        if (destOpt && destOpt.value) {
+            const lat = parseFloat(destOpt.getAttribute('data-lat'));
+            const lng = parseFloat(destOpt.getAttribute('data-lng'));
+            waypoints.push(L.latLng(lat, lng));
+        }
+
+        // 4. Update OSRM Road Routing Engine
+        if (routingControl) map.removeControl(routingControl);
+
+        if (waypoints.length > 1) {
+            routingControl = L.Routing.control({
+                waypoints: waypoints,
+                routeWhileDragging: false,
+                addWaypoints: false,
+                lineOptions: {
+                    styles: [{ color: '#0d6efd', opacity: 0.8, weight: 6 }]
+                },
+                createMarker: function (i, wp, nWps) {
+                    let label = i === 0 ? '📍 Start' : (i === nWps - 1 ? '🏁 Finish' : `Stop ${i}`);
+                    return L.marker(wp.latLng).bindPopup(`<b>${label}</b>`);
+                }
+            }).addTo(map);
+        }
+
+        // 5. Trigger KNN recommendations
+        fetchKNNRecommendations(knnTargetLat, knnTargetLng);
+    }
+
+    // Call Flask KNN Endpoint
+    function fetchKNNRecommendations(lat, lng) {
+        fetch('/api/knn/nearest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat: lat, lng: lng, locations: allLocations })
+        })
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('knn-suggestions');
+                container.innerHTML = '';
+
+                data.nearest.forEach(loc => {
+                    const card = document.createElement('div');
+                    card.className = 'p-2 bg-light rounded-3 knn-card d-flex justify-content-between align-items-center';
+                    card.innerHTML = `
+                    <div>
+                        <strong class="d-block text-dark small">${loc.name}</strong>
+                        <span class="text-muted" style="font-size: 0.75rem;">Type: ${loc.type}</span>
+                    </div>
+                    <button type="button" class="btn btn-xs btn-outline-dark rounded-pill py-0 px-2" style="font-size: 0.75rem;">+ Add</button>
+                `;
+                    card.onclick = () => selectLocationFromMap(loc.id);
+                    container.appendChild(card);
+                });
+            });
+    }
+
+    function getUserLocation() {
+        const status = document.getElementById('location-status');
+        if (!navigator.geolocation) return;
+        status.textContent = "Locating...";
+        navigator.geolocation.getCurrentPosition((pos) => {
+            document.getElementById('start_lat').value = pos.coords.latitude;
+            document.getElementById('start_lng').value = pos.coords.longitude;
+            status.textContent = "📍 Updated to GPS Location";
+            updateMapRouteAndKNN();
+        });
+    }
+</script>
+{% endblock %}

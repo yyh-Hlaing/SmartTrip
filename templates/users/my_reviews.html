@@ -1,0 +1,106 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - My Reviews{% endblock %}
+
+{% block head %}
+<style>
+    .star-rating { color: #ffc107; font-size: 1.1rem; }
+    .nav-tabs .nav-link { color: #4b5563; fw-medium; }
+    .nav-tabs .nav-link.active { color: #d97706 !important; fw-bold; border-bottom-color: #d97706; }
+    
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="mb-4">
+        <h2 class="fw-bold text-dark">
+            <span class="me-2">📝</span>My Reviews & Ratings
+        </h2>
+        <p class="text-muted">Everything you have rated so far.</p>
+    </div>
+
+    <!-- Nav Tabs -->
+    <ul class="nav nav-tabs mb-4 border-bottom-2" id="reviewTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold px-4" id="places-tab" data-bs-toggle="tab" data-bs-target="#places" type="button" role="tab">
+                📍 Places ({{ place_reviews|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold px-4" id="restaurants-tab" data-bs-toggle="tab" data-bs-target="#restaurants" type="button" role="tab">
+                🍽️ Restaurants ({{ restaurant_reviews|length }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="reviewTabContent">
+        
+        <!-- Places Reviews -->
+        <div class="tab-pane fade show active" id="places" role="tabpanel">
+            {% if place_reviews %}
+                <div class="d-flex flex-column gap-3">
+                    {% for review in place_reviews %}
+                        <div class="card border-0 shadow-sm rounded-4 p-3 card-custom">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <img src="{{ url_for('static', filename='uploads/' + review.place.image_file) }}" 
+                                         class="rounded-3" style="width: 60px; height: 60px; object-fit: cover;" onerror="this.src='{{ url_for('static', filename='images/default.jpg') }}'">
+                                </div>
+                                <div class="col">
+                                    <h6 class="fw-bold text-dark mb-1">{{ review.place.name }}</h6>
+                                    <p class="text-muted small mb-0">{{ review.place.region.name }}</p>
+                                </div>
+                                <div class="col-auto text-end">
+                                    <div class="star-rating">
+                                        {% for i in range(review.stars) %}⭐{% endfor %}
+                                    </div>
+                                    <a href="/user/places/{{ review.id }}" class="text-warning small text-decoration-none fw-medium">
+                                        View Place →
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted text-center py-4 bg-light rounded-3">You haven't rated any places yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Restaurant Reviews -->
+        <div class="tab-pane fade" id="restaurants" role="tabpanel">
+            {% if restaurant_reviews %}
+                <div class="d-flex flex-column gap-3">
+                    {% for review in restaurant_reviews %}
+                        <div class="card border-0 shadow-sm rounded-4 p-3 card-custom">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <div class="bg-warning bg-opacity-10 text-warning rounded-3 d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 60px; height: 60px;">
+                                        🍽️
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <h6 class="fw-bold text-dark mb-1">{{ review.restaurant.name }}</h6>
+                                    <p class="text-muted small mb-0">{{ review.restaurant.region.name }}</p>
+                                </div>
+                                <div class="col-auto text-end">
+                                    <div class="star-rating">
+                                        {% for i in range(review.stars) %}⭐{% endfor %}
+                                    </div>
+                                    <small class="text-muted">
+                                        Added: {{ review.created_at.strftime('%b %Y') if review.created_at else 'Recent' }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted text-center py-4 bg-light rounded-3">You haven't rated any restaurants yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

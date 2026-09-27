@@ -1,0 +1,125 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - My Profile{% endblock %}
+
+{% block content %}
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+
+    <div class="card card-custom border-0 shadow-sm mb-4 overflow-hidden">
+        <div class="bg-warning bg-opacity-15 px-4 pt-5 pb-4 position-relative" style="min-height: 140px;">
+            <div class="position-absolute" style="bottom: -35px; left: 30px;">
+                <img src="{{ url_for('static', filename=('uploads/' + user.profile_pic) if user.profile_pic else 'images/default_avatar.png') }}" 
+                     class="rounded-circle object-fit-cover shadow border border-3 border-white bg-white" 
+                     style="width: 100px; height: 100px;">
+            </div>
+        </div>
+        <div class="card-body pt-5 px-4 pb-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mt-2">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">{{ user.username }}</h3>
+                    <p class="text-muted small mb-2">{{ user.email }}</p>
+                    <p class="text-secondary mb-0" style="max-width: 600px;">{{ user.bio or 'No bio provided yet. Tell others about your travel style in settings!' }}</p>
+                </div>
+                <div>
+                    <a href="/user/settings" class="btn btn-outline-dark btn-sm px-3 rounded-pill fw-medium">
+                        ⚙️ Edit Profile & Location
+                    </a>
+                </div>
+            </div>
+
+            <hr class="my-4 text-muted opacity-25">
+
+            <div class="row g-3 text-center text-md-start">
+                <div class="col-md-4 border-end-md">
+                    <span class="text-muted small text-uppercase fw-bold d-block mb-1">📍 Current Location</span>
+                    <h6 class="fw-semibold text-dark mb-0">
+                        {% if user.latitude and user.longitude %}
+                            Lat: {{ user.latitude }}, Lon: {{ user.longitude }}
+                        {% else %}
+                            <span class="text-muted">Not set yet</span>
+                        {% endif %}
+                    </h6>
+                </div>
+                <div class="col-md-4 border-end-md px-md-4">
+                    <span class="text-muted small text-uppercase fw-bold d-block mb-1">❤️ Favorite Places</span>
+                    <h6 class="fw-semibold text-dark mb-0">{{ user.favorites | length }} Saved Places</h6>
+                </div>
+                <div class="col-md-4 px-md-4">
+                    <span class="text-muted small text-uppercase fw-bold d-block mb-1">🧳 Planned Trips</span>
+                    <h6 class="fw-semibold text-dark mb-0">{{ user.trips | length }} Active Itineraries</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-lg-6">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-dark mb-0">🧳 My Planned Trips</h5>
+                        <a href="/trip/planner" class="text-warning text-decoration-none small fw-semibold">Plan New +</a>
+                    </div>
+
+                    {% if user.trips %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for trip in user.trips %}
+                            <div class="p-3 rounded-3 border bg-light bg-opacity-50 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-1">{{ trip.title or 'Unnamed Trip' }}</h6>
+                                    <p class="text-muted small mb-0">📅 Created: {{ trip.created_at.strftime('%b %d, %Y') if trip.created_at else 'Recent' }}</p>
+                                </div>
+                                <a href="/trip/planner" class="btn btn-sm btn-outline-dark">View</a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <p class="mb-2">No planned trips found.</p>
+                            <a href="/trip/planner" class="btn btn-sm btn-gold">Create a Trip Plan</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-dark mb-0">❤️ My Favorite Places</h5>
+                        <a href="/places" class="text-warning text-decoration-none small fw-semibold">Explore More</a>
+                    </div>
+
+                    {% if user.favorites %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for fav in user.favorites %}
+                            <div class="p-3 rounded-3 border bg-light bg-opacity-50 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-warning bg-opacity-10 p-2 rounded-2 text-warning fw-bold">📍</div>
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-1">{{ fav.place.name if fav.place else 'Saved Place' }}</h6>
+                                        <small class="text-muted">{{ fav.place.city if fav.place and fav.place.city else 'SmartTrip Location' }}</small>
+                                    </div>
+                                </div>
+                                {% if fav.place %}
+                                    <a href="/places/{{ fav.place.id }}" class="btn btn-sm btn-outline-dark">Details</a>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <p class="mb-2">You haven't saved any favorite places yet.</p>
+                            <a href="/places" class="btn btn-sm btn-gold">Explore Places</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

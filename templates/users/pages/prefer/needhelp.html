@@ -1,0 +1,204 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Need Help?{% endblock %}
+
+{% block content %}
+
+<!-- Success Alert (Alpine.js) -->
+<div x-data="{ show: false, message: '' }" @support-submitted.window="
+        show = true;
+        message = $event.detail;
+        setTimeout(() => show = false, 4000)
+    " x-show="show" x-transition class="alert alert-success rounded-3 fw-medium" style="
+        position: fixed;
+        top: 80px;
+        right: 24px;
+        z-index: 9999;
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border-color: #c8e6c9;
+        min-width: 300px;
+    " role="alert">
+    <span x-text="message"></span>
+</div>
+
+<div class="container my-2" >
+
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h2 class="fw-bold text-dark">Need Help & Support?</h2>
+        <p class="text-muted">Find answers to common questions or reach out to our team for assistance.</p>
+    </div>
+
+    <!-- Quick Help Grid Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                    <div class="fs-2">💬</div>
+                    <div>
+                        <h5 class="fw-bold mb-1 text-dark">Live AI Support</h5>
+                        <p class="text-muted small mb-2">Have a quick question about your trip itinerary?</p>
+                        <a href="/user/ai" class="btn btn-sm btn-outline-dark fw-medium">Ask AI Assistant</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                    <div class="fs-2">🗺️</div>
+                    <div>
+                        <h5 class="fw-bold mb-1 text-dark">Explore Guides</h5>
+                        <p class="text-muted small mb-2">Learn how to browse places, manage locations & likes.</p>
+                        <a href="/user/places" class="btn btn-sm btn-outline-dark fw-medium">Browse Places</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frequently Asked Questions Accordion -->
+    <div class="card card-custom border-0 shadow-sm mb-4">
+        <div class="card-body p-4 p-md-4">
+            <h4 class="fw-bold mb-3 text-dark">Frequently Asked Questions</h4>
+            
+            <div class="accordion accordion-flush" id="faqAccordion">
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button fw-semibold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                            How do I update my location coordinates?
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                        <div class="accordion-item-body text-muted small py-2 px-1">
+                            Go to your <a href="/user/settings" class="text-warning fw-medium text-decoration-none">Settings</a> page and click the "📍 Get Current Location" button to automatically fill in your precise latitude and longitude, then click Save Changes.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button fw-semibold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            How can I change my account password?
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                        <div class="accordion-item-body text-muted small py-2 px-1">
+                            Navigate to your <a href="/user/settings" class="text-warning fw-medium text-decoration-none">Settings</a> page, scroll down to the Security section, and click "🔒 Change Password".
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button fw-semibold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                            Is SmartTrip free to use?
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                        <div class="accordion-item-body text-muted small py-2 px-1">
+                            Yes! SmartTrip provides core planning features, explore discovery features, and budgeting tools free of charge for travelers.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button fw-semibold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                            How do I create a new trip itinerary?
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+                        <div class="accordion-item-body text-muted small py-2 px-1">
+                            You can create a new itinerary by navigating to your Dashboard and clicking the "➕ Create New Trip" button. From there, you can set your destination, dates, and starting budget.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFive">
+                        <button class="accordion-button fw-semibold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                            Can I share my trip plans with travel buddies?
+                        </button>
+                    </h2>
+                    <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#faqAccordion">
+                        <div class="accordion-item-body text-muted small py-2 px-1">
+                            Absolutely. Open your trip details, click the "Share" icon at the top right of your itinerary, and generate a unique link to share with your friends or family.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSix">
+                        <button class="accordion-button fw-semibold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix">
+                            How does the Live AI Support work?
+                        </button>
+                    </h2>
+                    <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#faqAccordion">
+                        <div class="accordion-item-body text-muted small py-2 px-1">
+                            Our Live AI Assistant can help you build daily schedules, suggest local restaurants, and find hidden gems based on your specific location and interests. Just click "Ask AI Assistant" and type your question!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Questions -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSeven">
+                        <button class="accordion-button fw-semibold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven" aria-expanded="false" aria-controls="collapseSeven">
+                            Can I use SmartTrip offline?
+                        </button>
+                    </h2>
+                    <div id="collapseSeven" class="accordion-collapse collapse" aria-labelledby="headingSeven" data-bs-parent="#faqAccordion">
+                        <div class="accordion-item-body text-muted small py-2 px-1">
+                            Currently, SmartTrip requires an active internet connection to browse new places and generate AI recommendations, but you can export your finalized itinerary to PDF for offline viewing while traveling.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingEight">
+                        <button class="accordion-button fw-semibold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEight" aria-expanded="false" aria-controls="collapseEight">
+                            How do I save places I want to visit later?
+                        </button>
+                    </h2>
+                    <div id="collapseEight" class="accordion-collapse collapse" aria-labelledby="headingEight" data-bs-parent="#faqAccordion">
+                        <div class="accordion-item-body text-muted small py-2 px-1">
+                            When browsing the Explore page, simply click the heart (❤️) icon next to any location to save it to your Favorites list. You can view all your saved places in your profile dashboard.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingNine">
+                        <button class="accordion-button fw-semibold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNine" aria-expanded="false" aria-controls="collapseNine">
+                            Can I track my expenses during the trip?
+                        </button>
+                    </h2>
+                    <div id="collapseNine" class="accordion-collapse collapse" aria-labelledby="headingNine" data-bs-parent="#faqAccordion">
+                        <div class="accordion-item-body text-muted small py-2 px-1">
+                            Yes! Use the Budgeting tool within your trip dashboard to log expenses, categorize them (e.g., food, transport, lodging), and instantly see how much of your initial budget remains.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTen">
+                        <button class="accordion-button fw-semibold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTen" aria-expanded="false" aria-controls="collapseTen">
+                            What if I forget my password?
+                        </button>
+                    </h2>
+                    <div id="collapseTen" class="accordion-collapse collapse" aria-labelledby="headingTen" data-bs-parent="#faqAccordion">
+                        <div class="accordion-item-body text-muted small py-2 px-1">
+                            You can reset your password by clicking "Forgot Password" on the login screen. We will send a secure reset link to your registered email address to help you regain access.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

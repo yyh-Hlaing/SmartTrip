@@ -1,0 +1,169 @@
+<!-- Added bg-body and border-bottom so it distinctly separates from the main content -->
+<div class="d-flex justify-content-between align-items-center px-4 bg-body border-bottom border-secondary-subtle"
+    style="height: 64px;">
+
+    <!-- Left -->
+    <div class="d-flex align-items-center gap-3">
+
+        <!-- Changed to text-body-emphasis so the icon adapts to light/dark -->
+        <button class="btn d-lg-none border-0 px-2 py-1 text-body-emphasis" @click="sidebarOpen = true">
+            ☰
+        </button>
+
+        <!-- Added text-body-emphasis -->
+        <h2 class="fw-bold fs-5 mb-0 text-body-emphasis">
+            {% block page_title %}Dashboard{% endblock %}
+        </h2>
+
+    </div>
+
+
+    <!-- Right -->
+    <div class="d-flex align-items-center gap-3">
+
+        <!-- Looping Announcement -->
+        <div x-data="{
+        messages: {{ active_ads | tojson }},
+        current: 0
+    }" x-init="
+        if (messages.length > 1) {
+            setInterval(() => {
+                current = (current + 1) % messages.length
+            }, 3500)
+        }
+    " class="topbar-announcement d-none d-md-block">
+
+            <div class="topbar-announcement-text text-black text-body-secondary small text-end" x-text="messages[current]"
+                :key="current">
+            </div>
+
+        </div>
+
+
+        <!-- Notification -->
+        <div class="dropdown">
+
+            <button class="btn position-relative border-0 bg-transparent p-2 text-body-emphasis" type="button"
+                data-bs-toggle="dropdown">
+
+                <span style="font-size: 1.2rem;">🔔</span>
+
+            </button>
+
+        </div>
+
+
+        <!-- User -->
+        <div class="dropdown">
+
+            <!-- Added text-body so the button inherits theme text colors properly -->
+            <button class="btn border-0 p-0 d-flex align-items-center gap-3 text-start text-body" type="button"
+                data-bs-toggle="dropdown">
+
+                <img src="{{ url_for('static',filename=('uploads/' + current_user.profile_pic) if current_user.profile_pic else 'images/default_avatar.png') }}" class="rounded-circle"
+                    style="width:40px;height:40px;object-fit:cover;">
+
+                <div class="d-none d-md-block">
+
+                    {% if current_user %}
+
+                    <!-- Added text-body-emphasis -->
+                    <h6 class="mb-0 fw-semibold text-body-emphasis">
+                        {{ current_user.username }}
+                    </h6>
+
+                    <!-- Replaced text-muted with text-body-secondary -->
+                    <small class="text-body-secondary">
+                        {{ current_user.role.name }}
+                    </small>
+
+                    {% else %}
+
+                    <!-- Added text-body-emphasis -->
+                    <h6 class="mb-0 fw-semibold text-body-emphasis">
+                        Guest
+                    </h6>
+
+                    <!-- Replaced text-muted with text-body-secondary -->
+                    <small class="text-body-secondary">
+                        Visitor
+                    </small>
+
+                    {% endif %}
+
+                </div>
+
+            </button>
+
+            <!-- Added border-secondary-subtle to prevent the dropdown from bleeding into a dark background -->
+            <ul class="dropdown-menu dropdown-menu-end shadow border border-secondary-subtle rounded-3 mt-2">
+
+                <li>
+                    <a class="dropdown-item" href="/my/profile">
+                        👤 My Profile
+                    </a>
+                </li>
+
+                <li>
+                    <a class="dropdown-item" href="/my/change-password">
+                        🔒 Change Password
+                    </a>
+                </li>
+
+                <li>
+                    <a class="dropdown-item" href="/my/settings">
+                        ⚙ Settings
+                    </a>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a class="dropdown-item text-danger" href="/logout">
+                        🚪 Logout
+                    </a>
+                </li>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+    .topbar-announcement {
+        overflow: hidden;
+        width: 320px;
+    }
+
+    .topbar-announcement-text {
+        animation: announcementFade 3.5s ease-in-out;
+    }
+
+    /* Fixed animation syntax slightly to ensure smooth rendering in all browsers */
+    @keyframes announcementFade {
+        0% {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        15% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        85% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+    }
+</style>

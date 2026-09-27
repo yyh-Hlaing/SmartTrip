@@ -1,0 +1,176 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - {{ restaurant.name }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #restaurant-map { height: 400px; width: 1200px; border-radius: 15px; z-index: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 mx-auto" style="max-width: 1200px;">
+    
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-3">
+            <li class="breadcrumb-item"><a href="{{ url_for('user.restaurant_page') }}" class="text-decoration-none">Restaurants</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ restaurant.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">{{ restaurant.name }}</h2>
+            <p class="text-muted mb-0">📍 Region ID: {{ restaurant.region_id }} | 🕒 Added on {{ restaurant.created_at.strftime('%b %d, %Y') if restaurant.created_at else 'Recent' }}</p>
+        </div>
+    </div>
+
+    <div class="row g-5">
+        <div class="col-lg-8">
+            <h4 class="fw-bold mb-3">About {{ restaurant.name }}</h4>
+            <p class="text-muted lh-lg mb-5">
+                {{ restaurant.description or "No description available for this restaurant yet." }}
+            </p>
+
+            <h4 class="fw-bold mb-3 ">Location Map</h4>
+            <div id="restaurant-map" class="shadow-sm border mb-4 mt-5"></div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Dining Info</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <span class="text-muted">Status</span>
+                        <span class="badge bg-success bg-opacity-25 text-dark fw-semibold">Open / Active</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Category</span>
+                        <span class="fw-medium">Local Restaurant</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reviews & Comments Section (Comment Left, Review Right) -->
+    <div class="row mt-5 pt-4 border-top">
+        <div class="col-12 mb-3">
+            <h3 class="fw-bold">Reviews & Feedback</h3>
+        </div>
+
+        <!-- LEFT COLUMN: Comments -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm bg-white rounded-4 mb-4 p-4 border">
+                <h5 class="fw-bold mb-3 text-dark">Leave a Comment</h5>
+                <form action="{{ url_for('user.add_restaurant_comment', restaurant_id=restaurant.id) }}" method="POST">
+                    <div class="mb-3">
+                        <textarea class="form-control bg-light rounded-3 border-0 p-3" rows="3" name="comment_text" placeholder="Share your experience or ask a question..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-dark rounded-pill px-4 shadow-sm">Post Comment</button>
+                </form>
+            </div>
+
+          <h5 class="fw-bold mb-3">Customer Comments</h5>
+            <div class="d-flex flex-column gap-3 mb-5">
+                {% if restaurant.comments %}
+                    {% for comment in restaurant.comments %}
+                    <div class="d-flex gap-3 p-3 bg-light rounded-4 shadow-sm align-items-center">
+                        <img src="{{ url_for('static', filename='uploads/' + comment.user.profile_pic) if comment.user and comment.user.profile_pic else url_for('static', filename='images/default_avatar.png') }}" 
+                             onerror="this.src='{{ url_for('static', filename='images/default_avatar.png') }}'"
+                             class="rounded-circle object-fit-cover flex-shrink-0 border" style="width: 45px; height: 45px;" alt="Avatar">
+                        
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold text-dark">{{ comment.user.username if comment.user else 'User' }}</span>
+                                <span class="text-muted small">• {{ comment.created_at.strftime('%b %d, %Y') if comment.created_at else 'Recent' }}</span>
+                            </div>
+                            <p class="text-muted mb-0 small">{{ comment.content }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted small">No comments yet. Be the first to share your thoughts!</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Ratings & Reviews -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm bg-white rounded-4 mb-4 p-4 border">
+                <h5 class="fw-bold mb-3 text-dark">Leave a Star Rating</h5>
+                
+                {% set current_user_rating = [] %}
+                {% if g.user %}
+                    {% for r in restaurant.ratings %}
+                        {% if r.user_id == g.user.id %}
+                            {{ current_user_rating.append(r.stars) }}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+
+                <form action="{{ url_for('user.add_restaurant_review', restaurant_id=restaurant.id) }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">
+                            {% if current_user_rating %}
+                                Update Your Rating (Current: {{ current_user_rating[0] }} ⭐)
+                            {% else %}
+                                Select Rating Score
+                            {% endif %}
+                        </label>
+                        <select class="form-select rounded-pill" name="rating">
+                            <option value="5" {% if current_user_rating and current_user_rating[0] == 5 %}selected{% endif %}>⭐⭐⭐⭐⭐ (5/5 Excellent)</option>
+                            <option value="4" {% if current_user_rating and current_user_rating[0] == 4 %}selected{% endif %}>⭐⭐⭐⭐ (4/5 Very Good)</option>
+                            <option value="3" {% if current_user_rating and current_user_rating[0] == 3 %}selected{% endif %}>⭐⭐⭐ (3/5 Average)</option>
+                            <option value="2" {% if current_user_rating and current_user_rating[0] == 2 %}selected{% endif %}>⭐⭐ (2/5 Poor)</option>
+                            <option value="1" {% if current_user_rating and current_user_rating[0] == 1 %}selected{% endif %}>⭐ (1/5 Terrible)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-warning text-dark fw-semibold rounded-pill px-4 shadow-sm">
+                        {% if current_user_rating %}Update Rating{% else %}Submit Rating{% endif %}
+                    </button>
+                </form>
+            </div>
+
+            <h5 class="fw-bold mb-3">Ratings Breakdown</h5>
+            <div class="d-flex flex-column gap-2">
+                {% if restaurant.ratings %}
+                    {% for rating in restaurant.ratings %}
+                    <div class="p-3 bg-light rounded-4 shadow-sm d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold text-dark small">{{ rating.user.username if rating.user else 'User' }}</span>
+                        <span class="text-warning small">
+                            {% for i in range(rating.stars) %}⭐{% endfor %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted small">No ratings yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const restLat = parseFloat("{{ restaurant.latitude }}");
+        const restLng = parseFloat("{{ restaurant.longitude }}");
+        
+        const map = L.map('restaurant-map').setView([restLat, restLng], 15);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        L.marker([restLat, restLng])
+            .addTo(map)
+            .bindPopup("<b>{{ restaurant.name }}</b><br>Restaurant Location")
+            .openPopup();
+    });
+</script>
+{% endblock %}

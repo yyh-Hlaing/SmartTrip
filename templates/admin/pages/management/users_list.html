@@ -1,0 +1,299 @@
+{% extends 'admin/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4" style="max-width: 1300px;">
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">👥 User Management</h3>
+            <p class="text-muted small mb-0">Manage platform users, roles, password resets, and account access.</p>
+        </div>
+
+        <button class="btn btn-warning rounded-3 px-4 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2"
+            data-bs-toggle="modal" data-bs-target="#createUserModal">
+            <span>➕</span> Add New User
+        </button>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('admin.admin_users_list') }}" class="row g-2 align-items-center">
+                <div class="col-12 col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted">🔍</span>
+                        <input type="text" name="search" class="form-control bg-light border-start-0"
+                            placeholder="Search username or email..." value="{{ search_query }}">
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <select name="role" class="form-select bg-light" onchange="this.form.submit()">
+                        <option value="all" {% if role_filter=='all' %}selected{% endif %}>All Roles</option>
+                        <option value="Admin" {% if role_filter=='Admin' %}selected{% endif %}>Admin</option>
+                        <option value="User" {% if role_filter=='User' %}selected{% endif %}>User</option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <select name="sort" class="form-select bg-light" onchange="this.form.submit()">
+                        <option value="newest" {% if sort_by=='newest' %}selected{% endif %}>Sort: Newest First</option>
+                        <option value="oldest" {% if sort_by=='oldest' %}selected{% endif %}>Sort: Oldest First</option>
+                        <option value="username_asc" {% if sort_by=='username_asc' %}selected{% endif %}>Username (A-Z)
+                        </option>
+                        <option value="username_desc" {% if sort_by=='username_desc' %}selected{% endif %}>Username
+                            (Z-A)</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-1 d-grid">
+                    <a href="{{ url_for('admin.admin_users_list') }}" class="btn btn-outline-secondary"
+                        title="Reset Filters">↻</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-uppercase text-muted small fw-bold">
+                    <tr>
+                        <th class="ps-4" style="width: 70px;">Avatar</th>
+                        <th>User Details</th>
+                        <th>Role</th>
+                        <th>Location Coordinates</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if users %}
+                    {% for u in users %}
+                    <tr>
+                        <td class="ps-4">
+                            <img src="{{ url_for('static', filename='uploads/' + u.profile_pic) if u.profile_pic and u.profile_pic != 'default_avatar.png' else url_for('static', filename='images/default_avatar.png') }}"
+                                onerror="this.src='{{ url_for('static', filename='images/default_avatar.png') }}'"
+                                class="rounded-circle shadow-sm" style="width: 45px; height: 45px; object-fit: cover;">
+                        </td>
+
+                        <td>
+                            <h6 class="fw-bold mb-0 text-dark">{{ u.username }}</h6>
+                            <small class="text-muted">{{ u.email }}</small>
+                        </td>
+
+                        <td>
+                            <span
+                                class="badge {% if u.role and u.role.name == 'Admin' %}bg-warning text-dark{% else %}bg-secondary text-white{% endif %} px-3 py-1 rounded-pill">
+                                {{ u.role.name if u.role else 'User' }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {% if u.latitude and u.longitude %}
+                            <span class="badge bg-opacity-10 bg-primary text-primary border border-primary-subtle">
+                                📍 {{ u.latitude | round(3) }}, {{ u.longitude | round(3) }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted small">No Location</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center pe-4">
+                            <div class="btn-group gap-1">
+                                <button class="btn btn-sm btn-light border rounded-2"
+                                    onclick="openResetPasswordModal({{ u.id }}, '{{ u.username | escape }}')"
+                                    title="Reset Password">
+                                    🔑
+                                </button>
+
+                                {% if u.username == 'admin' or u.id == current_user.id %}
+                                <button class="btn btn-sm btn-light border rounded-2 text-danger" disabled
+                                    title="Cannot delete this user">
+                                    🗑️
+                                </button>
+                                {% else %}
+                                <button class="btn btn-sm btn-light border rounded-2 text-danger"
+                                    onclick="confirmDeleteUser({{ u.id }}, '{{ u.username | escape }}')"
+                                    title="Delete User">
+                                    🗑️
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <h5>No users found 👤</h5>
+                            <p class="small mb-0">Try updating your search query or role filter.</p>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pagination.pages > 1 %}
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">
+                Showing {{ users|length }} of {{ pagination.total }} users
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link"
+                            href="{{ url_for('admin.admin_users_list', page=pagination.prev_num, search=search_query, role=role_filter, sort=sort_by) }}">Previous</a>
+                    </li>
+
+                    {% for p in pagination.iter_pages() %}
+                    {% if p %}
+                    <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                        <a class="page-link"
+                            href="{{ url_for('admin.admin_users_list', page=p, search=search_query, role=role_filter, sort=sort_by) }}">{{
+                            p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link"
+                            href="{{ url_for('admin.admin_users_list', page=pagination.next_num, search=search_query, role=role_filter, sort=sort_by) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="fw-bold">➕ Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createUserForm" onsubmit="handleCreateUser(event)">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Username</label>
+                        <input type="text" name="username" id="createUsername" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Email Address</label>
+                        <input type="email" name="email" id="createEmail" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Password</label>
+                        <input type="password" name="password" id="createPassword" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Role</label>
+                        <select name="role" id="createRole" class="form-select">
+                            <option value="User">User</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning rounded-3 fw-semibold">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-body p-4">
+                <h5 class="fw-bold mb-1">🔑 Reset Password</h5>
+                <p class="small text-muted mb-3" id="resetUserTarget">Target user</p>
+                <input type="password" id="newPasswordInput" class="form-control mb-3" placeholder="Enter new password"
+                    required>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light w-50 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning w-50 rounded-3 fw-semibold"
+                        onclick="submitPasswordReset()">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 border-0 shadow text-center p-4">
+            <span class="fs-1 text-danger">⚠️</span>
+            <h5 class="fw-bold mt-2">Delete User?</h5>
+            <p class="small text-muted mb-4" id="deleteUserTargetText">Are you sure?</p>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light w-50 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger w-50 rounded-3" onclick="submitUserDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let activeUserId = null;
+
+    async function handleCreateUser(e) {
+        e.preventDefault();
+        const formData = new FormData(document.getElementById('createUserForm'));
+
+        const res = await fetch('/admin/users/create', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.status === 'success') location.reload();
+        else alert(data.message);
+    }
+
+    function openResetPasswordModal(id, username) {
+        activeUserId = id;
+        document.getElementById('resetUserTarget').innerText = `Target user: ${username}`;
+        document.getElementById('newPasswordInput').value = '';
+        new bootstrap.Modal(document.getElementById('resetPasswordModal')).show();
+    }
+
+    async function submitPasswordReset() {
+        const newPassword = document.getElementById('newPasswordInput').value;
+        if (!newPassword) {
+            alert('Please provide a valid password.');
+            return;
+        }
+
+        const res = await fetch(`/admin/users/reset_password/${activeUserId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ new_password: newPassword })
+        });
+        const data = await res.json();
+        if (data.status === 'success') location.reload();
+        else alert(data.message);
+    }
+
+    function confirmDeleteUser(id, username) {
+        activeUserId = id;
+        document.getElementById('deleteUserTargetText').innerText = `Are you sure you want to delete "${username}"?`;
+        new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
+    }
+
+    async function submitUserDelete() {
+        const res = await fetch(`/admin/users/delete/${activeUserId}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') location.reload();
+        else alert(data.message);
+    }
+</script>
+{% endblock %}

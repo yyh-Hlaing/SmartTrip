@@ -1,0 +1,117 @@
+{% extends 'admin/layouts/base.html' %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    .card-custom {
+        border-radius: 16px;
+    }
+    .leaflet-popup-content-wrapper { 
+        border-radius: 12px; 
+        padding: 5px; 
+    }
+    .content-view { display: block; }
+</style>
+{% endblock %}
+
+{% block content %} 
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+    <section id="users-map-view" class="content-view active">
+        <div class="card-custom border-0 shadow-sm bg-white p-4">
+            
+            
+            <div id="usersMap" style="height: 850px; width: 100%; border-radius: 12px; z-index: 1;" class="border"></div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const usersMap = L.map('usersMap').setView([16.8409, 96.1735], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(usersMap);
+
+        const userMapIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-gold.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41], 
+            iconAnchor: [12, 41], 
+            popupAnchor: [1, -34], 
+            shadowSize: [41, 41]
+        });
+
+        const markerBounds = [];
+
+        {% for user in users %}
+            {% if user.latitude and user.longitude %}
+                (function() {
+                    const avatarUrl = "{{ url_for('static', filename='uploads/' + user.profile_pic) if user.profile_pic else url_for('static', filename='images/default_avatar.png') }}";
+                    
+                    const popupContent = `
+                        <div class="text-center" style="width: 180px; padding: 5px;">
+                            <img src="${avatarUrl}" 
+                                 onerror="this.src='{{ url_for('static', filename='images/default_avatar.png') }}'" 
+                                 class="rounded-circle mb-2" 
+                                 style="width: 70px; height: 70px; object-fit: cover; border: 3px solid #d4af37; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                            
+                            <h6 style="font-weight: 700; margin-bottom: 2px; color: #333; font-size: 1rem;">
+                                {{ user.username | escape }}
+                            </h6>
+                            
+                            <p class="text-muted mb-2" style="font-size: 0.8rem;">
+                                {{ user.email | escape }}
+                            </p>
+                            
+                            <span class="badge text-dark" style="background-color: rgba(212, 175, 55, 0.2); border: 1px solid #d4af37;">
+                                {{ user.role.name if user.role else 'User' }}
+                            </span>
+                            
+                            <hr style="margin: 8px 0; border-color: #eee;">
+                            
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                📍 {{ user.latitude }}, {{ user.longitude }}
+                            </div>
+                        </div>
+                    `;
+                    
+                    const latLng = [{{ user.latitude }}, {{ user.longitude }}];
+                    markerBounds.push(latLng);
+
+                    L.marker(latLng, { icon: userMapIcon })
+                        .addTo(usersMap)
+                        .bindPopup(popupContent);
+                })();
+            {% endif %}
+        {% endfor %}
+
+        if (markerBounds.length > 0) {
+            const bounds = L.latLngBounds(markerBounds);
+            usersMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }
+
+        setTimeout(() => {
+            usersMap.invalidateSize();
+        }, 300);
+    });
+
+    function switchTab(viewId, element) {
+        document.querySelectorAll('.content-view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+        
+        const targetView = document.getElementById(viewId);
+        if (targetView) targetView.classList.add('active');
+        if (element) element.classList.add('active');
+
+        if (viewId === 'users-map-view') {
+            window.dispatchEvent(new Event('resize'));
+        }
+    }
+</script>
+{% endblock %}

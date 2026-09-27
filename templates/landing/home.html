@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Myanmar - The Golden Land</title>
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+
+    <header class="home-header">
+        <div class="logo">Smart<span>Trip</span></div>
+        <nav>
+            <a href="/" class="active">Home</a>
+            <a href="#destinations">Destinations</a>
+            <a href="/register">Register</a>
+            <a href="/login">Login</a>
+        </nav>
+    </header>
+
+    <section class="hero">
+        
+        <div class="hero-content">
+            <h1>Discover the Magic of the Golden Land</h1>
+            <p>Where Do You Want To Go?</p>
+            <a href="#destinations" class="hero-btn">Start Exploring</a>
+        </div>
+      
+    </section>
+
+   {% set region_map = {
+        1: 'Kachin State', 2: 'Kayah State', 3: 'Kayin State', 4: 'Chin State',
+        5: 'Sagaing Region', 6: 'Tanintharyi Region', 7: 'Bago Region', 8: 'Magway Region',
+        9: 'Mandalay Region', 10: 'Mon State', 11: 'Rakhine State', 12: 'Yangon Region',
+        13: 'Shan State', 14: 'Ayeyarwady Region', 15: 'Naypyidaw Union Territory'
+    } %}
+
+    <!--<section id="destinations" class="destinations-container">
+        <h2>Top Places to Visit</h2>
+        
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">All Places</button>
+            <button class="filter-btn" data-filter="9">Mandalay Region</button>
+            <button class="filter-btn" data-filter="13">Shan State</button>
+            <button class="filter-btn" data-filter="12">Yangon Region</button>
+            <button class="filter-btn" data-filter="11">Rakhine State</button>
+        </div>
+
+        <div class="cards-grid">
+            {% for place in places %}
+            <div class="card" data-region="{{ place.region_id }}">
+                <img src="{{ url_for('static', filename='uploads/' + place.image_file) }}" class="card-img" alt="{{ place.name }}">
+                <div class="card-body">
+                    <span class="tag">{{ region_map.get(place.region_id, 'Unknown Region') }}</span>
+                    <h3>{{ place.name }}</h3>
+                    <p>{{ place.description | truncate(120) }}</p>
+                    <a href="/place/{{ place.id }}" class="card-btn" style="text-decoration: none; display: block;">Learn More</a>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12 text-center text-muted w-100"><p>No destinations have been added yet.</p></div>
+            {% endfor %}
+        </div>
+    </section>-->
+
+    <footer>
+        <p>&copy; 2026 Explore Myanmar Tourism. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const filterButtons = document.querySelectorAll('.filter-btn');
+            const cards = document.querySelectorAll('.card');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    const filterValue = button.getAttribute('data-filter');
+                    cards.forEach(card => {
+                        if (filterValue === 'all' || card.getAttribute('data-region') === filterValue) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

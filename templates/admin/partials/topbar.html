@@ -1,0 +1,69 @@
+<div class="d-flex justify-content-between align-items-center px-4 bg-body border-bottom border-secondary-subtle" style="height: 64px;">
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-outline-secondary d-lg-none border-0 px-2 py-1 text-body" @click="sidebarOpen = true">
+            ☰
+        </button>
+        <h2 class="fw-bold fs-5 mb-0 text-body-emphasis">
+            Control Panel
+        </h2>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+
+        <div x-data="{
+            messages: {{ active_ads | tojson }},
+            current: 0
+        }" x-init="
+            if (messages.length > 1) {
+                setInterval(() => {
+                    current = (current + 1) % messages.length
+                }, 3500)
+            }
+        " class="topbar-announcement d-none d-md-block">
+
+            <div class="topbar-announcement-text text-body-secondary small text-end" x-text="messages[current]"
+                :key="current">
+            </div>
+
+        </div>
+
+        <div class="dropdown">
+            <button class="btn position-relative border-0 bg-transparent p-2 text-body" type="button" data-bs-toggle="dropdown">
+                <span style="font-size: 1.2rem;">🔔</span>
+            </button>
+        </div>
+
+        <div class="dropdown">
+            <button class="btn border-0 p-0 d-flex align-items-center gap-3 text-start" type="button" data-bs-toggle="dropdown">
+                <img src="{{ url_for('static',filename=('uploads/' + current_user.profile_pic) if current_user.profile_pic else 'images/default_avatar.png') }}" 
+                     class="rounded-circle border border-secondary-subtle" 
+                     style="width:40px;height:40px;object-fit:cover;">
+                <div class="d-none d-md-block">
+                    <h6 class="mb-0 fw-semibold text-body-emphasis">
+                        {{ current_user.username if current_user is defined else 'Admin' }}
+                    </h6>
+                    <small class="text-body-secondary" style="font-size: 0.75rem;">Administrator</small>
+                </div>
+            </button>
+
+            <ul class="dropdown-menu dropdown-menu-end shadow border border-secondary-subtle rounded-3 mt-2">
+                <li>
+                    <a class="dropdown-item text-danger d-flex align-items-center gap-2" href="/logout">
+                        <span>🚪</span> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    .topbar-announcement { overflow: hidden; width: 320px; }
+    .topbar-announcement-text { animation: announcementFade 3.5s ease-in-out; }
+    @keyframes announcementFade {
+        0% { opacity: 0; transform: translateY(8px); }
+        15% { opacity: 1; transform: translateY(0); }
+        85% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-8px); }
+    }
+</style>

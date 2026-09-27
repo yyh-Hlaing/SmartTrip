@@ -1,0 +1,875 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Transportation Options & Fares{% endblock %}
+
+{% block content %}
+<!-- 1. ADDED FLATPICKR CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<style>
+    /* --- Clean & Modern UI Overhaul --- */
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
+        padding: 20px;
+    }
+
+    .search-wrapper {
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 30px;
+        position: sticky;
+        top: 20px;
+        z-index: 1020;
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .col-12 {
+        width: 100%;
+    }
+
+    /* Form Inputs & Selects */
+    .form-control,
+    select,
+    .dropdown-toggle {
+        height: 50px;
+        width: 100%;
+        padding: 10px 15px;
+        border: 1px solid #dce0e4;
+        border-radius: 8px;
+        background-color: #fff;
+        font-size: 1rem;
+        color: #333;
+        transition: border-color 0.2s ease;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .form-control:focus,
+    select:focus,
+    .dropdown-toggle:focus {
+        border-color: navy;
+    }
+
+    .form-control:disabled {
+        background-color: #f1f3f5;
+        cursor: not-allowed;
+    }
+
+    /* Input Groups (Date Clear Buttons) */
+    .input-group {
+        display: flex;
+        align-items: center;
+        border: 1px solid #dce0e4;
+        border-radius: 8px;
+        background-color: #fff;
+        overflow: hidden;
+    }
+
+    .input-group:focus-within {
+        border-color: navy;
+    }
+
+    .input-group .form-control {
+        border: none;
+        border-radius: 0;
+        flex-grow: 1;
+        box-shadow: none;
+    }
+
+    .input-group-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 15px;
+        background: transparent;
+        color: #dc3545;
+        font-size: 1.5rem;
+        cursor: pointer;
+        line-height: 1;
+        transition: color 0.2s;
+    }
+
+    .input-group-text:hover {
+        color: #a71d2a;
+    }
+
+    /* Dropdown Styling */
+    .dropdown {
+        position: relative;
+        width: 100%;
+    }
+
+    .dropdown-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-align: left;
+    }
+
+    .dropdown-panel {
+        display: none;
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+    }
+
+    .dropdown-panel.show {
+        display: block;
+    }
+
+    .item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        font-size: 0.95rem;
+    }
+
+    .item:last-of-type {
+        margin-bottom: 20px;
+    }
+
+    .counter {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .counter button {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #dce0e4;
+        background: #fff;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #333;
+        transition: background 0.2s;
+    }
+
+    .counter button:hover {
+        background: #f1f3f5;
+    }
+
+    .counter span {
+        width: 20px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    /* Toggle Switch Styling */
+    .trip-toggle-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        color: #555;
+    }
+
+    .toggle-switch {
+        width: 46px;
+        height: 24px;
+        background: #ced4da;
+        border-radius: 12px;
+        position: relative;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .toggle-switch.active {
+        background: navy;
+    }
+
+    .toggle-thumb {
+        width: 18px;
+        height: 18px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        transition: left 0.3s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch.active .toggle-thumb {
+        left: 25px;
+    }
+
+    /* Search Button */
+    .search-btn {
+        background-color: navy;
+        color: white;
+        height: 50px;
+        width: 100%;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .search-btn:hover {
+        background-color: #00004d;
+    }
+
+    .search-btn:active {
+        transform: scale(0.99);
+    }
+
+    /* Responsive Grid Adjustments */
+    .search-menus {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+</style>
+
+<div style="max-width: 1300px; margin: 0 auto;">
+
+    <div class="search-wrapper">
+        <form action="https://ortp.railways.gov.mm/search" method="get" name="myform" id="myForm" class="search-form">
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="trip-toggle-container" id="tripToggleContainer">
+                        <span id="oneWayLabel" style="font-weight: bold; color: #111;">One Way</span>
+                        <div class="toggle-switch" id="tripToggle">
+                            <div class="toggle-thumb"></div>
+                        </div>
+                        <span id="roundTripLabel">Round Trip</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-menus">
+                <!-- From Location -->
+                <div class="search-field">
+                    <select id="from" name="from" required>
+                        <option value="" selected disabled>ခရီးစဉ်အစ</option>
+                        <option value="281fa3c4-83ea-4d8c-9c81-0d036114a99a">
+                            ရန်ကုန်
+                        </option>
+                        <option value="af0c4efc-f01e-4632-abb8-923f2f5b6c21">
+                            တိုးကြောင်ကလေး
+                        </option>
+                        <option value="3bae917c-ac7b-4b96-b1a9-75ec73d5fe22">
+                            ပဲခူး
+                        </option>
+                        <option value="53908aee-20ef-40e2-aa79-922202b8a562">
+                            ဒိုက်ဦး
+                        </option>
+                        <option value="5937de1f-36e4-4777-a7e1-b0e1b0a6b401">
+                            ပြွန်တန်ဆာ
+                        </option>
+                        <option value="fbe074ff-01d7-4f32-b749-fc2aad2f1fe3">
+                            ညောင်လေးပင်
+                        </option>
+                        <option value="c000a21a-729a-4b45-bd3e-7f4876af4d19">
+                            ကျောက်တံခါး
+                        </option>
+                        <option value="5d994bad-a39a-4cab-8d0d-3bc96ac8f5e2">
+                            ဖြူး
+                        </option>
+                        <option value="c8edd1bf-35f9-4143-a860-79b93f775768">
+                            တောင်ငူ
+                        </option>
+                        <option value="2a657a41-7396-46b9-83c3-3114fea7b48b">
+                            ဆွာ
+                        </option>
+                        <option value="72948835-ec74-4461-af27-6a1e3ab3164c">
+                            ရေနီ
+                        </option>
+                        <option value="e29b982c-a0a6-4c5a-924a-dba17f0c167e">
+                            ပျဉ်းမနား
+                        </option>
+                        <option value="7903159a-8455-447a-86bc-0b9c835a931f">
+                            နေပြည်တော်
+                        </option>
+                        <option value="e85f9b57-e58a-409b-b3d3-2de7bf4f14f0">
+                            တပ်ကုန်း
+                        </option>
+                        <option value="2143af9c-0b62-4a96-a729-744fb12b565c">
+                            ရမည်းသင်း
+                        </option>
+                        <option value="0ad76d0f-09c4-4e9e-b5aa-e1b4cdf44946">
+                            ပျော်ဘွယ်
+                        </option>
+                        <option value="18591642-cbc5-4663-aed9-e4f84a46374d">
+                            ညောင်ရမ်း
+                        </option>
+                        <option value="b21593aa-2719-4fc6-8603-e96b4fe6ebd8">
+                            သာစည်
+                        </option>
+                        <option value="dc28fc6e-d737-4a73-8500-58f41cd964a4">
+                            သဲတော
+                        </option>
+                        <option value="b9e6db9e-17e0-4024-a4d5-c15258c0fb58">
+                            မြစ်သား
+                        </option>
+                        <option value="80c314dc-69f6-4da6-b5f4-561a01589fe3">
+                            ကျောက်ဆည်
+                        </option>
+                        <option value="49880e72-1d19-4755-b13f-482d0215c3da">
+                            မန္တလေး
+                        </option>
+                        <option value="13d1dd11-8316-410a-a4b8-64b745346ba8">
+                            ဝေါ
+                        </option>
+                        <option value="1139f54e-ecf0-47e4-bce0-b5b91c77f7dc">
+                            သိမ်ဇရပ်
+                        </option>
+                        <option value="d6d17d69-0142-4ad3-b071-19f643901525">
+                            မုပ္ပလင်
+                        </option>
+                        <option value="f2696a58-34d4-4539-a0a8-03d81796212d">
+                            ကျိုက္ကသာ
+                        </option>
+                        <option value="c1fb8783-332f-4466-8ffd-410fae4f1a41">
+                            ကျိုက်ထို
+                        </option>
+                        <option value="c8bdaaf5-366e-4253-881c-3eec1b713868">
+                            မရမ်းကုန်း
+                        </option>
+                        <option value="4bf95bd0-a697-4660-8c45-d823b422ebb6">
+                            တောင်စွန်း
+                        </option>
+                        <option value="5becdc28-a0f8-43ce-89db-be2195430cce">
+                            နှင်းပုလဲ
+                        </option>
+                        <option value="2562d930-53c6-4052-af3e-87e6e50894dd">
+                            သိမ်ဆိပ်
+                        </option>
+                        <option value="cedd13d9-2f7d-4869-bf7e-335307f1f8ea">
+                            သထုံ
+                        </option>
+                        <option value="6d3f26cd-bb82-471c-9b6d-d3e5f3503a3d">
+                            ရင်းငြိမ်
+                        </option>
+                        <option value="c2f3e459-9543-4c6e-b8ec-f8592aaadf61">
+                            ဇင်းကျိုက်
+                        </option>
+                        <option value="5b9c1d58-105e-44e2-8bf7-b27c255ba0f4">
+                            ပေါင်
+                        </option>
+                        <option value="9e616a55-e43f-4f9c-badd-df357b97bab2">
+                            မုတ္တမ
+                        </option>
+                        <option value="ae0c4e86-84c5-4f60-8482-df30d01c54f1">
+                            မော်လမြိုင်
+                        </option>
+                        <option value="54fc0487-5af8-4693-a21b-30c66159c7fd">
+                            အင်းစိန်
+                        </option>
+                        <option value="aa355e21-6331-4f29-9439-3eb00bc6b437">
+                            တညင်းကုန်း
+                        </option>
+                        <option value="5655f911-3dd9-45bd-a4ed-340cfeb6f1c5">
+                            လှော်ကား
+                        </option>
+                        <option value="a6b95b57-cd49-42c9-8c9e-3e47147d417f">
+                            တိုက်ကြီး
+                        </option>
+                        <option value="67df8640-7a0d-4b63-a3c4-3f381f80342c">
+                            သာယာဝတီ
+                        </option>
+                        <option value="d5b083b7-7d55-44db-bc96-a3b92f9717c3">
+                            လက်ပံတန်း
+                        </option>
+                        <option value="f6d5aa79-290c-4c7f-9799-e04d713d6912">
+                            မင်းလှ
+                        </option>
+                        <option value="16431afe-78fe-4c36-b04a-711b4712509f">
+                            အုတ်ဖို
+                        </option>
+                        <option value="3d53ef44-5598-4e02-aca5-12b9595ad1a3">
+                            ကြို့ပင်ကောက်
+                        </option>
+                        <option value="7bc72749-76a7-4265-b2fd-2fc415de2cee">
+                            ဇီးကုန်း
+                        </option>
+                        <option value="37913e98-cd4c-49e1-a65d-4ba5bfba94d2">
+                            နတ္တလင်း
+                        </option>
+                        <option value="a0262c6b-e0ba-45bd-a3c8-c2a1a49f01a2">
+                            ပေါင်းတည်
+                        </option>
+                        <option value="afc55f91-0a8d-4eaf-acb8-25f2842e3961">
+                            ပုတီးကုန်း
+                        </option>
+                        <option value="ad1c6bd4-9d82-413d-8a43-6bed3441fdcd">
+                            သဲကုန်း
+                        </option>
+                        <option value="58e0fdea-287a-4de7-ad68-9275923709e0">
+                            ဆင်မြီးဆွဲ
+                        </option>
+                        <option value="ac9c22c6-1fbc-4bec-afcb-fd13883e6a6b">
+                            ပြည်
+                        </option>
+                    </select>
+                </div>
+
+                <!-- To Location -->
+                <div class="search-field">
+                    <select id="to" name="to" required>
+                        <option value="" disabled selected>ခရီးစဉ်အဆုံး</option>
+                        <option value="281fa3c4-83ea-4d8c-9c81-0d036114a99a">
+                            ရန်ကုန်
+                        </option>
+                        <option value="af0c4efc-f01e-4632-abb8-923f2f5b6c21">
+                            တိုးကြောင်ကလေး
+                        </option>
+                        <option value="3bae917c-ac7b-4b96-b1a9-75ec73d5fe22">
+                            ပဲခူး
+                        </option>
+                        <option value="53908aee-20ef-40e2-aa79-922202b8a562">
+                            ဒိုက်ဦး
+                        </option>
+                        <option value="5937de1f-36e4-4777-a7e1-b0e1b0a6b401">
+                            ပြွန်တန်ဆာ
+                        </option>
+                        <option value="fbe074ff-01d7-4f32-b749-fc2aad2f1fe3">
+                            ညောင်လေးပင်
+                        </option>
+                        <option value="c000a21a-729a-4b45-bd3e-7f4876af4d19">
+                            ကျောက်တံခါး
+                        </option>
+                        <option value="5d994bad-a39a-4cab-8d0d-3bc96ac8f5e2">
+                            ဖြူး
+                        </option>
+                        <option value="c8edd1bf-35f9-4143-a860-79b93f775768">
+                            တောင်ငူ
+                        </option>
+                        <option value="2a657a41-7396-46b9-83c3-3114fea7b48b">
+                            ဆွာ
+                        </option>
+                        <option value="72948835-ec74-4461-af27-6a1e3ab3164c">
+                            ရေနီ
+                        </option>
+                        <option value="e29b982c-a0a6-4c5a-924a-dba17f0c167e">
+                            ပျဉ်းမနား
+                        </option>
+                        <option value="7903159a-8455-447a-86bc-0b9c835a931f">
+                            နေပြည်တော်
+                        </option>
+                        <option value="e85f9b57-e58a-409b-b3d3-2de7bf4f14f0">
+                            တပ်ကုန်း
+                        </option>
+                        <option value="2143af9c-0b62-4a96-a729-744fb12b565c">
+                            ရမည်းသင်း
+                        </option>
+                        <option value="0ad76d0f-09c4-4e9e-b5aa-e1b4cdf44946">
+                            ပျော်ဘွယ်
+                        </option>
+                        <option value="18591642-cbc5-4663-aed9-e4f84a46374d">
+                            ညောင်ရမ်း
+                        </option>
+                        <option value="b21593aa-2719-4fc6-8603-e96b4fe6ebd8">
+                            သာစည်
+                        </option>
+                        <option value="dc28fc6e-d737-4a73-8500-58f41cd964a4">
+                            သဲတော
+                        </option>
+                        <option value="b9e6db9e-17e0-4024-a4d5-c15258c0fb58">
+                            မြစ်သား
+                        </option>
+                        <option value="80c314dc-69f6-4da6-b5f4-561a01589fe3">
+                            ကျောက်ဆည်
+                        </option>
+                        <option value="49880e72-1d19-4755-b13f-482d0215c3da">
+                            မန္တလေး
+                        </option>
+                        <option value="13d1dd11-8316-410a-a4b8-64b745346ba8">
+                            ဝေါ
+                        </option>
+                        <option value="1139f54e-ecf0-47e4-bce0-b5b91c77f7dc">
+                            သိမ်ဇရပ်
+                        </option>
+                        <option value="d6d17d69-0142-4ad3-b071-19f643901525">
+                            မုပ္ပလင်
+                        </option>
+                        <option value="f2696a58-34d4-4539-a0a8-03d81796212d">
+                            ကျိုက္ကသာ
+                        </option>
+                        <option value="c1fb8783-332f-4466-8ffd-410fae4f1a41">
+                            ကျိုက်ထို
+                        </option>
+                        <option value="c8bdaaf5-366e-4253-881c-3eec1b713868">
+                            မရမ်းကုန်း
+                        </option>
+                        <option value="4bf95bd0-a697-4660-8c45-d823b422ebb6">
+                            တောင်စွန်း
+                        </option>
+                        <option value="5becdc28-a0f8-43ce-89db-be2195430cce">
+                            နှင်းပုလဲ
+                        </option>
+                        <option value="2562d930-53c6-4052-af3e-87e6e50894dd">
+                            သိမ်ဆိပ်
+                        </option>
+                        <option value="cedd13d9-2f7d-4869-bf7e-335307f1f8ea">
+                            သထုံ
+                        </option>
+                        <option value="6d3f26cd-bb82-471c-9b6d-d3e5f3503a3d">
+                            ရင်းငြိမ်
+                        </option>
+                        <option value="c2f3e459-9543-4c6e-b8ec-f8592aaadf61">
+                            ဇင်းကျိုက်
+                        </option>
+                        <option value="5b9c1d58-105e-44e2-8bf7-b27c255ba0f4">
+                            ပေါင်
+                        </option>
+                        <option value="9e616a55-e43f-4f9c-badd-df357b97bab2">
+                            မုတ္တမ
+                        </option>
+                        <option value="ae0c4e86-84c5-4f60-8482-df30d01c54f1">
+                            မော်လမြိုင်
+                        </option>
+                        <option value="54fc0487-5af8-4693-a21b-30c66159c7fd">
+                            အင်းစိန်
+                        </option>
+                        <option value="aa355e21-6331-4f29-9439-3eb00bc6b437">
+                            တညင်းကုန်း
+                        </option>
+                        <option value="5655f911-3dd9-45bd-a4ed-340cfeb6f1c5">
+                            လှော်ကား
+                        </option>
+                        <option value="a6b95b57-cd49-42c9-8c9e-3e47147d417f">
+                            တိုက်ကြီး
+                        </option>
+                        <option value="67df8640-7a0d-4b63-a3c4-3f381f80342c">
+                            သာယာဝတီ
+                        </option>
+                        <option value="d5b083b7-7d55-44db-bc96-a3b92f9717c3">
+                            လက်ပံတန်း
+                        </option>
+                        <option value="f6d5aa79-290c-4c7f-9799-e04d713d6912">
+                            မင်းလှ
+                        </option>
+                        <option value="16431afe-78fe-4c36-b04a-711b4712509f">
+                            အုတ်ဖို
+                        </option>
+                        <option value="3d53ef44-5598-4e02-aca5-12b9595ad1a3">
+                            ကြို့ပင်ကောက်
+                        </option>
+                        <option value="7bc72749-76a7-4265-b2fd-2fc415de2cee">
+                            ဇီးကုန်း
+                        </option>
+                        <option value="37913e98-cd4c-49e1-a65d-4ba5bfba94d2">
+                            နတ္တလင်း
+                        </option>
+                        <option value="a0262c6b-e0ba-45bd-a3c8-c2a1a49f01a2">
+                            ပေါင်းတည်
+                        </option>
+                        <option value="afc55f91-0a8d-4eaf-acb8-25f2842e3961">
+                            ပုတီးကုန်း
+                        </option>
+                        <option value="ad1c6bd4-9d82-413d-8a43-6bed3441fdcd">
+                            သဲကုန်း
+                        </option>
+                        <option value="58e0fdea-287a-4de7-ad68-9275923709e0">
+                            ဆင်မြီးဆွဲ
+                        </option>
+                        <option value="ac9c22c6-1fbc-4bec-afcb-fd13883e6a6b">
+                            ပြည်
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Departure Date -->
+                <div class="search-field" id="departureField">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="departure_date" placeholder="Departure Date"
+                            name="departure_date" required>
+                        <span class="input-group-text" id="departure-clear" title="Clear Date">&times;</span>
+                    </div>
+                </div>
+
+                <!-- Arrival Date -->
+                <div class="search-field" id="arrivalField">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="arrival-datepicker" placeholder="Arrival Date"
+                            name="arrival_date" disabled>
+                        <span class="input-group-text" id="arrival-clear" title="Clear Date">&times;</span>
+                    </div>
+                </div>
+
+                <div class="search-field" style="grid-column: span 2;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+
+                        <!-- Passenger Select -->
+                        <div class="dropdown" style="flex: 1;">
+                            <button type="button" class="dropdown-toggle" onclick="toggleDropdown()">
+                                <span id="selection">1 Adult, 0 Child, 0 Infant</span>
+                                <i class="fa fa-chevron-down"></i>
+                            </button>
+
+                            <div class="dropdown-panel" id="dropdownPanel">
+                                <div class="item">
+                                    <label>Adults</label>
+                                    <div class="counter">
+                                        <button type="button" onclick="changeCount('adults', -1)">−</button>
+                                        <span id="adults">1</span>
+                                        <button type="button" onclick="changeCount('adults', 1)">+</button>
+                                    </div>
+                                </div>
+
+                                <div class="item">
+                                    <label>Children (3-12 yrs)</label>
+                                    <div class="counter">
+                                        <button type="button" onclick="changeCount('children', -1)">−</button>
+                                        <span id="children">0</span>
+                                        <button type="button" onclick="changeCount('children', 1)">+</button>
+                                    </div>
+                                </div>
+
+                                <div class="item">
+                                    <label>Infants (Under 3 yrs)</label>
+                                    <div class="counter">
+                                        <button type="button" onclick="changeCount('infants', -1)">−</button>
+                                        <span id="infants">0</span>
+                                        <button type="button" onclick="changeCount('infants', 1)">+</button>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="search-btn" onclick="closeDropdown"
+                                    style="height: 40px; margin-top: 5px;">
+                                    Done
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Search Button -->
+                        <button type="submit" id="searchSubmitBtn"
+                            class="btn btn-dark rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2"
+                            style="white-space: nowrap; height: 45px;">
+                            <span id="searchBtnIcon">🔍</span>
+
+                            <span id="searchBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"
+                                aria-hidden="true"></span>
+
+                            <span id="searchBtnText">Search Trips</span>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- Hidden Inputs for Form Submission -->
+                <input type="hidden" name="count" id="inputAdults" value="1">
+                <input type="hidden" name="children" id="inputChildren" value="0">
+                <input type="hidden" name="infants" id="inputInfants" value="0">
+                <input type="hidden" name="has_child_seat" id="inputChildSeat" value="0">
+                <input type="hidden" name="has_infant_seat" id="inputInfantSeat" value="0">
+                <input type="hidden" name="clear_cache" id="clear_cache" value="1">
+            </div>
+        </form>
+    </div>
+
+    <div id="trip-results-container"></div>
+
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <script>
+        // 1. Initialize Datepickers
+        const departurePicker = flatpickr("#departure_date", {
+            dateFormat: "Y-m-d",
+            minDate: "today"
+        });
+        const arrivalPicker = flatpickr("#arrival-datepicker", {
+            dateFormat: "Y-m-d",
+            minDate: "today"
+        });
+
+        // Clear buttons for dates
+        document.getElementById('departure-clear').addEventListener('click', () => departurePicker.clear());
+        document.getElementById('arrival-clear').addEventListener('click', () => arrivalPicker.clear());
+
+        // 2. Trip Toggle Logic
+        const tripToggle = document.getElementById('tripToggle');
+        const arrivalInput = document.getElementById('arrival-datepicker');
+        const oneWayLabel = document.getElementById('oneWayLabel');
+        const roundTripLabel = document.getElementById('roundTripLabel');
+
+        tripToggle.addEventListener('click', () => {
+            tripToggle.classList.toggle('active');
+            const isRoundTrip = tripToggle.classList.contains('active');
+
+            if (isRoundTrip) {
+                arrivalInput.removeAttribute('disabled');
+                roundTripLabel.style.fontWeight = 'bold';
+                roundTripLabel.style.color = '#111';
+                oneWayLabel.style.fontWeight = 'normal';
+                oneWayLabel.style.color = '#555';
+            } else {
+                arrivalInput.setAttribute('disabled', 'true');
+                arrivalPicker.clear();
+                oneWayLabel.style.fontWeight = 'bold';
+                oneWayLabel.style.color = '#111';
+                roundTripLabel.style.fontWeight = 'normal';
+                roundTripLabel.style.color = '#555';
+            }
+        });
+
+        // 3. Dropdown Logic
+        function toggleDropdown() {
+            document.getElementById('dropdownPanel').classList.toggle('show');
+        }
+
+        function closeDropdown() {
+            document.getElementById('dropdownPanel').classList.remove('show');
+        }
+
+        window.onclick = function (event) {
+            if (!event.target.closest('.dropdown')) {
+                const panel = document.getElementById('dropdownPanel');
+                if (panel.classList.contains('show')) panel.classList.remove('show');
+            }
+        }
+
+        // 4. Passenger Counter Logic
+        const counts = { adults: 1, children: 0, infants: 0 };
+
+        function changeCount(type, delta) {
+            const newCount = counts[type] + delta;
+            if (type === 'adults' && newCount < 1) return;
+            if (newCount < 0) return;
+
+            counts[type] = newCount;
+            document.getElementById(type).innerText = counts[type];
+
+            if (type === 'adults') document.getElementById('inputAdults').value = counts[type];
+            if (type === 'children') document.getElementById('inputChildren').value = counts[type];
+            if (type === 'infants') document.getElementById('inputInfants').value = counts[type];
+
+            updateSelectionText();
+        }
+
+        function updateSelectionText() {
+            const text = `${counts.adults} လူကြီး, ${counts.children} ကလေး, ${counts.infants} နို့စို့အရွယ်`;
+            document.getElementById('selection').innerText = text;
+        }
+
+        const searchForm = document.getElementById('myForm');
+        const resultsContainer = document.getElementById('trip-results-container');
+
+        searchForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const sourceId = document.getElementById('from').value;
+            const destId = document.getElementById('to').value;
+            const departureDate = document.getElementById('departure_date').value;
+            const adults = parseInt(document.getElementById('inputAdults').value) || 1;
+            const children = parseInt(document.getElementById('inputChildren').value) || 0;
+            const totalSeats = adults + children;
+
+            if (!sourceId || !destId || !departureDate) {
+                alert("ကျေးဇူးပြု၍ ခရီးစဉ်နှင့် ရက်စွဲကို ရွေးချယ်ပါ။ (Please select route and date)");
+                return;
+            }
+
+            resultsContainer.innerHTML = `
+                <div class="text-center mt-5 mb-5" style="text-align: center;">
+                    <i class="fa fa-spinner fa-spin fa-3x" style="color: navy;"></i>
+                    <p class="mt-2">ရှာဖွေနေပါသည်... (Searching...)</p>
+                </div>
+            `;
+
+            const apiUrl = `/api/train-search?sourceId=${encodeURIComponent(sourceId)}&destinationId=${encodeURIComponent(destId)}&departureDate=${encodeURIComponent(departureDate)}&numberOfSeats=${totalSeats}&isForeigner=false`;
+
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Failed to fetch trips');
+                }
+                renderTrips(data.trips, departureDate, sourceId, destId);
+
+            } catch (error) {
+                console.error("Error fetching trips:", error);
+                resultsContainer.innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; text-align: center;">
+                        <strong>အမှားအယွင်းဖြစ်ပေါ်နေပါသည်။</strong> (An error occurred: ${error.message})
+                    </div>
+                `;
+            }
+        });
+
+        function renderTrips(trips, date, sourceId, destId) {
+            if (!trips || trips.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; text-align: center;">
+                        ဤရက်စွဲအတွက် ခရီးစဉ်မရှိပါ။ (No trips found for this date.)
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="search-wrapper mb-5" style="position: relative; z-index: 1;">
+                    <h6>ထွက်ခွာမည့်ရက် (Departure), ${date}</h6>
+            `;
+
+            trips.forEach((trip) => {
+                const logoUrl = trip.operator_logo || 'https://ortp.railways.gov.mm/imgs/myanma_train.jpg';
+                const trainName = trip.operator_name || 'Express Train';
+                const className = trip.bus_class || 'Standard';
+
+                html += `
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; border: 1px solid #dce0e4; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fff; gap: 15px;">
+        
+        <div style="display: flex; flex-direction: column; align-items: flex-start; min-width: 180px; max-width: 200px;">
+            <img src="${trip.operator_logo}" alt="${trip.operator_name}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 8px;">
+            <span style="font-size: 10px; font-weight: 600; color: #333;">${trip.operator_name}</span>
+        </div>
+
+        <div style="flex: 1; text-align: center; min-width: 250px;">
+            <div style="margin-bottom: 5px;">
+                <strong>${trip.departure_time}</strong> - ${trip.boarding_point || 'Start'}
+                <br>
+                <small style="color: #666;">${className}</small>
+            </div>
+            <div>
+                <strong>Arrival</strong> - ${trip.dropping_point || 'End'}
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-width: 150px;">
+            <div class="fs-5 fw-bold text-dark">${trip.price}</div>
+            <p class="small text-muted" style="margin: 0 0 8px 0;">ခရီးသည်တစ်ဦးလျှင်</p>
+          <a href="${trip.select_link !== 'javascript:void(0)' ? trip.select_link : '#'}" 
+   class="search-btn" 
+   style="display: inline-block; text-align: center; padding: 5px 10px; text-decoration: none; height: auto; font-size: 12px;">
+   ရွေးချယ်မည် (Select)
+</a>
+        </div>
+    </div>
+`;
+            });
+
+            html += `</div>`;
+            resultsContainer.innerHTML = html;
+        }
+    </script>
+</div>
+{% endblock %}

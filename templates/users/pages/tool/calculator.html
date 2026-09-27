@@ -1,0 +1,383 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Budget Calculator{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<style>
+    .ts-control {
+        border-radius: 50rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        background-color: #f8f9fa !important;
+        border: 0 !important;
+    }
+</style>
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+
+    <!-- TOP BANNER -->
+    <div class="card card-custom border-0 shadow-sm mb-4 overflow-hidden"
+        style="background: linear-gradient(135deg, rgba(255,193,7,0.15) 0%, rgba(255,255,255,1) 100%);">
+        <div class="card-body p-4 p-md-5">
+            <span class="badge bg-warning text-dark mb-2 fw-semibold px-3 py-1 rounded-pill">
+                Financial Estimator
+            </span>
+            <h2 class="fw-bold text-dark mb-1">
+                💰 Smart Trip Budget Calculator
+            </h2>
+            <p class="text-muted mb-0">
+                Calculate your estimated travel cost from your saved location to your selected destination city.
+            </p>
+        </div>
+    </div>
+
+    <!-- MAIN ROW -->
+    <div class="row g-4 mb-5">
+
+        <!-- INPUT SECTION -->
+        <div class="col-lg-6">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4 p-md-5">
+                    <h4 class="fw-bold text-dark mb-4">🧮 Trip Parameters</h4>
+
+                    <!-- STARTING LOCATION -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">
+                            Starting Location
+                        </label>
+                        <div class="form-control border-0 bg-light rounded-pill">
+                            {% if user.latitude is not none and user.longitude is not none %}
+                            📍 Saved Location
+                            <small class="text-muted">
+                                ({{ "%.4f"|format(user.latitude) }}, {{ "%.4f"|format(user.longitude) }})
+                            </small>
+                            {% else %}
+                            <span class="text-danger">⚠️ Location not saved</span>
+                            {% endif %}
+                        </div>
+                        {% if user.latitude is none or user.longitude is none %}
+                        <div class="form-text text-danger">
+                            Please save your location from Dashboard first.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- DESTINATION CITY -->
+                    <div class="mb-3">
+                        <label for="selectCity" class="form-label small fw-bold text-muted text-uppercase">
+                            Destination City
+                        </label>
+                        <select id="selectCity" class="form-select border-0 bg-light rounded-pill px-3 py-2"
+                            placeholder="Type to search a city..." autocomplete="off" required>
+                            <option value="" disabled selected>Choose a destination city...</option>
+                            {% for city in cities %}
+                            <option value="{{ city.id }}" data-name="{{ city.city }}" data-lat="{{ city.latitude }}"
+                                data-lng="{{ city.longitude }}" data-hotel-cost="{{ city.hotel_cost }}"
+                                data-food-cost="{{ city.food_cost }}">
+                                {{ city.city }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- TRANSPORTATION -->
+                    <div class="mb-3">
+                        <label for="selectTransport" class="form-label small fw-bold text-muted text-uppercase">
+                            Transportation Type
+                        </label>
+                        <select id="selectTransport" class="form-select border-0 bg-light rounded-pill px-3 py-2"
+                            required>
+                            <option value="" disabled selected>Select transportation...</option>
+                            <option value="bus" data-rate="120">🚌 Express Bus</option>
+                            <option value="train" data-rate="60">🚆 Train</option>
+                        </select>
+                        <div class="form-text">
+                            Transportation fare is calculated based on distance.
+                        </div>
+                    </div>
+
+                    <!-- DURATION -->
+                    <div class="mb-3">
+                        <label for="tripDuration" class="form-label small fw-bold text-muted text-uppercase">
+                            Duration (ရက်ပေါင်း)
+                        </label>
+                        <input type="number" id="tripDuration"
+                            class="form-control border-0 bg-light rounded-pill px-3 py-2" min="1" max="30" value="3"
+                            required>
+                    </div>
+
+                    <!-- NUMBER OF PEOPLE -->
+                    <div class="mb-4">
+                        <label for="numPeople" class="form-label small fw-bold text-muted text-uppercase">
+                            Number of people (လူဦးရေ)
+                        </label>
+                        <input type="number" id="numPeople"
+                            class="form-control border-0 bg-light rounded-pill px-3 py-2" min="1" max="20" value="1"
+                            required>
+                    </div>
+
+                    <!-- CALCULATE BUTTON -->
+                    <button type="button" id="calculateBtn"
+                        class="btn btn-dark w-100 rounded-pill fw-medium py-2 shadow-sm">
+                        Calculate Total Budget
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULT SECTION -->
+        <div class="col-lg-6">
+            <div class="card card-custom border-0 shadow-sm h-100 bg-light bg-opacity-50">
+                <div class="card-body p-4 p-md-5">
+                    <h4 class="fw-bold text-dark mb-4">
+                        📊 Estimated Budget Breakdown (ခန့်မှန်းကုန်ကျစရိတ်)
+                    </h4>
+
+                    <div id="res-start" class="form-control border-0 bg-light rounded-pill mb-3">
+                        {% if user.latitude is not none and user.longitude is not none %}
+                        <span class="text-success fw-semibold">📍 Starting Location</span>
+                        <br>
+                        <small class="text-muted">
+                            Latitude: {{ "%.4f"|format(user.latitude) }}, Longitude: {{ "%.4f"|format(user.longitude) }}
+                        </small>
+                        {% else %}
+                        <span class="text-danger">⚠️ Location not saved</span>
+                        {% endif %}
+                    </div>
+
+                    <div
+                        class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-3 shadow-sm">
+                        <span class="text-muted small fw-medium">📍 Destination City</span>
+                        <span class="fw-bold text-dark" id="res-place">Not selected</span>
+                    </div>
+
+                    <div
+                        class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-3 shadow-sm">
+                        <span class="text-muted small fw-medium">🛣️ Estimated Distance (အကွာအဝေး)</span>
+                        <span class="fw-bold text-dark" id="res-distance">0.00 km</span>
+                    </div>
+
+                    <div
+                        class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-3 shadow-sm">
+                        <span class="text-muted small fw-medium">🏨 Hotel Cost (ဟိုတယ်စရိတ်)</span>
+                        <span class="fw-bold text-dark" id="res-hotel-cost">0.00 MMK / day</span>
+                    </div>
+
+                    <div
+                        class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-3 shadow-sm">
+                        <span class="text-muted small fw-medium">🍽️ Food Cost (စားစရိတ်)</span>
+                        <span class="fw-bold text-dark" id="res-food-cost">0.00 MMK / day</span>
+                    </div>
+                     <div
+                        class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-3 shadow-sm">
+                        <span class="text-muted small fw-medium">🍜 Total Living Cost (နေထိုင်စားစရိတ်စုစုပေါင်း)</span>
+                        <span class="fw-bold text-dark" id="res-daily">0.00 MMK</span>
+                    </div>
+
+                    <div
+                        class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-3 shadow-sm">
+                        <span class="text-muted small fw-medium">🚌 Transportation Fare (အသွားအပြန်)</span>
+                        <span class="fw-bold text-dark" id="res-transport">0.00 MMK</span>
+                    </div>
+
+                   
+
+                    <div
+                        class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white rounded-3 shadow-sm border-start border-4 border-primary">
+                        <span class="text-muted small fw-medium">💰 Estimated Grand Total</span>
+                        <span class="fw-bold text-primary fs-5" id="res-total">0.00 MMK</span>
+                    </div>
+
+                    <div
+                        class="d-flex justify-content-between align-items-center mb-4 p-3 bg-warning bg-opacity-10 rounded-3 shadow-sm border border-warning border-opacity-25">
+                        <span class="text-dark small fw-bold">Average Cost Per Day (တစ်နေ့ ပျှမ်းမျှကုန်ကျစရိတ်)</span>
+                        <span class="fw-bold text-dark fs-5" id="res-average">0.00 MMK / day</span>
+                    </div>
+
+                    <div class="text-semibold fw-medium fst-italic text-center mt-3">
+                        <b>📌 Note: ကုန်ကျစရိတ်သည် ခန့်မှန်းခြေသာဖြစ်ပြီး၊ user တည်းခိုသည့် ဟိုတယ်အမျိုးအစားနှင့်
+                            ကိုယ်ပိုင်အသုံးစရိတ်ပေါ် မူတည်၍ ကုန်ကျစရိတ်များ ပြောင်းလဲနိုင်ပါသည်။</b>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const citySelect = document.getElementById("selectCity");
+        const transportSelect = document.getElementById("selectTransport");
+        const durationInput = document.getElementById("tripDuration");
+        const peopleInput = document.getElementById("numPeople");
+        const calculateBtn = document.getElementById("calculateBtn");
+
+        // Initialize TomSelect
+        const citySelectInstance = new TomSelect("#selectCity", {
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            },
+            onChange: function (value) {
+                if (value && transportSelect.value) {
+                    performCalculation();
+                }
+            }
+        });
+
+        const resStart = document.getElementById("res-start");
+        const resPlace = document.getElementById("res-place");
+        const resDistance = document.getElementById("res-distance");
+        const resHotelCost = document.getElementById("res-hotel-cost");
+        const resFoodCost = document.getElementById("res-food-cost");
+        const resTransport = document.getElementById("res-transport");
+        const resDaily = document.getElementById("res-daily");
+        const resTotal = document.getElementById("res-total");
+        const resAverage = document.getElementById("res-average");
+
+        const TRANSPORT_RATES = {
+            bus: 120,
+            train: 60,
+            taxi: 200,
+        };
+
+        function formatNumber(value) {
+            return Number(value || 0).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function formatMMK(value) {
+            return formatNumber(value) + " MMK";
+        }
+
+        function getSelectedCityId() {
+            return citySelectInstance ? citySelectInstance.getValue() : citySelect.value;
+        }
+
+        async function performCalculation() {
+            const cityId = getSelectedCityId();
+            const transport = transportSelect.value;
+            const days = parseInt(durationInput.value);
+            const people = parseInt(peopleInput.value) || 1;
+
+            {% if user.latitude is none or user.longitude is none %}
+            alert("Please save your location from Dashboard first.");
+            return;
+            {% endif %}
+
+            if (!cityId) {
+                alert("Please select a destination city.");
+                return;
+            }
+
+            if (!transport) {
+                alert("Please select transportation.");
+                return;
+            }
+
+            const transportRate = TRANSPORT_RATES[transport];
+            if (!transportRate) {
+                alert("Invalid transportation type.");
+                return;
+            }
+
+            if (isNaN(days) || days < 1 || days > 30) {
+                alert("Duration must be between 1 and 30 days.");
+                return;
+            }
+
+            if (isNaN(people) || people < 1 || people > 20) {
+                alert("Number of travelers must be between 1 and 20.");
+                return;
+            }
+
+            calculateBtn.disabled = true;
+            calculateBtn.innerHTML = "⏳ Calculating...";
+
+            try {
+                const response = await fetch("{{ url_for('user.calculate_budget') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        city_id: Number(cityId),
+                        transport: transport,
+                        days: days,
+                        people: people
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || data.status !== "success") {
+                    alert(data.message || "Unable to calculate budget.");
+                    return;
+                }
+
+                const distanceKm = Number(data.distance_km || 0);
+                const hotelCostPerDay = Number(data.hotel_cost || 0);
+                const foodCostPerDay = Number(data.food_cost || 0);
+                const totalDailyCostPerPerson = hotelCostPerDay + foodCostPerDay;
+
+                const transportCost = distanceKm * transportRate * people * 2;
+                const livingCost = totalDailyCostPerPerson * days * people;
+                const grandTotal = transportCost + livingCost;
+                const averageDaily = grandTotal / days;
+
+                if (data.start_latitude !== null && data.start_longitude !== null) {
+                    resStart.innerHTML = `
+                    <span class="text-success fw-semibold">📍 Starting Location</span>
+                    <br>
+                    <small class="text-muted">
+                        Latitude: ${Number(data.start_latitude).toFixed(4)}, Longitude: ${Number(data.start_longitude).toFixed(4)}
+                    </small>
+                `;
+                }
+
+                resPlace.innerText = data.destination || "Unknown";
+                resDistance.innerText = `${formatNumber(distanceKm)} km`;
+                resHotelCost.innerText = `${formatMMK(hotelCostPerDay)} / day (per person)`;
+                resFoodCost.innerText = `${formatMMK(foodCostPerDay)} / day (per person)`;
+                resTransport.innerText = `${formatMMK(transportCost)}`;
+                resDaily.innerText = `${formatMMK(livingCost)} (${days} days, ${people} people)`;
+                resTotal.innerText = formatMMK(grandTotal);
+                resAverage.innerText = `${formatMMK(averageDaily)} / day`;
+
+            } catch (error) {
+                console.error("Budget calculation error:", error);
+                alert("Unable to connect to server.");
+            } finally {
+                calculateBtn.disabled = false;
+                calculateBtn.innerHTML = "Calculate Total Budget";
+            }
+        }
+
+        calculateBtn.addEventListener("click", performCalculation);
+
+        transportSelect.addEventListener("change", function () {
+            if (getSelectedCityId() && transportSelect.value) {
+                performCalculation();
+            }
+        });
+
+        durationInput.addEventListener("change", function () {
+            if (getSelectedCityId() && transportSelect.value) {
+                performCalculation();
+            }
+        });
+
+        peopleInput.addEventListener("change", function () {
+            if (getSelectedCityId() && transportSelect.value) {
+                performCalculation();
+            }
+        });
+    });
+</script>
+{% endblock %}

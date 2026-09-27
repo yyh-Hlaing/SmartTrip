@@ -1,0 +1,184 @@
+{% extends 'admin/layouts/base.html' %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    .card-custom {
+        border-radius: 16px;
+    }
+    .leaflet-popup-content-wrapper { 
+        border-radius: 12px; 
+        padding: 5px; 
+    }
+    .content-view { display: block; }
+    
+    /* Custom Map Legend */
+    .map-legend {
+        background: white;
+        padding: 10px 14px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+</style>
+{% endblock %}
+
+{% block content %} 
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+    <section id="places-map-view" class="content-view active">
+        <div class="card-custom border-0 shadow-sm bg-white p-4">
+            <div id="placesMap" style="height: 850px; width: 100%; border-radius: 12px; z-index: 1;" class="border"></div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const placesMap = L.map('placesMap').setView([16.8409, 96.1735], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(placesMap);
+
+        const placeIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41], 
+            iconAnchor: [12, 41], 
+            popupAnchor: [1, -34], 
+            shadowSize: [41, 41]
+        });
+
+        const restaurantIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41], 
+            iconAnchor: [12, 41], 
+            popupAnchor: [1, -34], 
+            shadowSize: [41, 41]
+        });
+
+        const boundsGroup = L.featureGroup();
+
+        {% for place in places %}
+            {% if place.latitude and place.longitude %}
+                (function() {
+                    const imageUrl = "{{ url_for('static', filename='uploads/' + place.image_file) if place.image_file else url_for('static', filename='images/default_place.png') }}";
+                    
+                    const popupContent = `
+                        <div class="text-center" style="width: 200px; padding: 5px;">
+                            <img src="${imageUrl}" 
+                                 onerror="this.src='{{ url_for('static', filename='images/default_place.png') }}'" 
+                                 class="rounded-3 mb-2 w-100" 
+                                 style="height: 100px; object-fit: cover; border: 2px solid #0d6efd; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                            
+                            <h6 style="font-weight: 700; margin-bottom: 2px; color: #333; font-size: 1rem;">
+                                {{ place.name | escape }}
+                            </h6>
+                            
+                            <p class="text-muted mb-2" style="font-size: 0.8rem; line-height: 1.2;">
+                                📍 Place
+                            </p>
+                            
+                            <div class="d-flex justify-content-center align-items-center gap-1 mb-2">
+                                <span class="badge bg-primary text-white">
+                                    ⭐ {{ place.average_rating if place.average_rating else 'N/A' }}
+                                </span>
+                            </div>
+                            
+                            <hr style="margin: 8px 0; border-color: #eee;">
+                            
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                {{ place.latitude }}, {{ place.longitude }}
+                            </div>
+                        </div>
+                    `;
+                    
+                    const marker = L.marker([{{ place.latitude }}, {{ place.longitude }}], { icon: placeIcon })
+                        .bindPopup(popupContent);
+                        
+                    marker.addTo(placesMap);
+                    boundsGroup.addLayer(marker);
+                })();
+            {% endif %}
+        {% endfor %}
+
+        {% for restaurant in restaurants %}
+            {% if restaurant.latitude and restaurant.longitude %}
+                (function() {
+                    const popupContent = `
+                        <div class="text-center" style="width: 200px; padding: 5px;">
+                            <h6 style="font-weight: 700; margin-bottom: 2px; color: #dc3545; font-size: 1rem;">
+                                🍽️ {{ restaurant.name | escape }}
+                            </h6>
+                            
+                            <p class="badge bg-danger text-white mb-2">
+                                Restaurant
+                            </p>
+
+                            <p class="text-muted mb-2" style="font-size: 0.8rem; line-height: 1.2;">
+                                {{ (restaurant.description[:60] + '...') if restaurant.description else 'No description available.' }}
+                            </p>
+                            
+                            <hr style="margin: 8px 0; border-color: #eee;">
+                            
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                {{ restaurant.latitude }}, {{ restaurant.longitude }}
+                            </div>
+                        </div>
+                    `;
+                    
+                    const marker = L.marker([{{ restaurant.latitude }}, {{ restaurant.longitude }}], { icon: restaurantIcon })
+                        .bindPopup(popupContent);
+                        
+                    marker.addTo(placesMap);
+                    boundsGroup.addLayer(marker);
+                })();
+            {% endif %}
+        {% endfor %}
+
+        const legend = L.control({ position: 'topright' });
+        legend.onAdd = function() {
+            const div = L.DomUtil.create('div', 'map-legend');
+            div.innerHTML = `
+                <div class="legend-item mb-1">
+                    <span class="legend-color" style="background: #2A81CB;"></span>
+                    <strong>Places</strong>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #CB2B2A;"></span>
+                    <strong>Restaurants</strong>
+                </div>
+            `;
+            return div;
+        };
+        legend.addTo(placesMap);
+
+        // Auto-fit map boundaries if markers exist
+        if (boundsGroup.getLayers().length > 0) {
+            placesMap.fitBounds(boundsGroup.getBounds().pad(0.1));
+        }
+
+        setTimeout(() => {
+            placesMap.invalidateSize();
+        }, 200);
+    });
+</script>
+{% endblock %}

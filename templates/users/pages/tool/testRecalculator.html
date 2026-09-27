@@ -1,0 +1,333 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Budget-Based Destination Finder{% endblock %}
+
+{% block content %}
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+
+    <!-- Top Banner -->
+    <div class="card card-custom border-0 shadow-sm mb-4 overflow-hidden bg-gradient"
+        style="background: linear-gradient(135deg, rgba(13,110,253,0.15) 0%, rgba(255,255,255,1) 100%);">
+        <div class="card-body p-4 p-md-5">
+            <h2 class="fw-bold text-dark mb-1">🎯 Where Can My Budget Take Me?</h2>
+            <p class="text-muted mb-0">Enter your total budget, trip duration, and number of travelers to discover destinations you can afford.</p>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+
+        <!-- Input Form Column -->
+        <div class="col-lg-4">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+
+                    <form id="reverseCalculatorForm">
+                        <div class="mb-3">
+                            <label for="userBudget" class="form-label small fw-bold text-muted text-uppercase">Total Budget (MMK)</label>
+                            <input type="number" id="userBudget"
+                                class="form-control border-0 bg-light rounded-pill px-3 py-2" placeholder="e.g., 150000"
+                                min="0" step="1000" value="200000" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="numPeople" class="form-label small fw-bold text-muted text-uppercase">Number of Travelers (People)</label>
+                            <input type="number" id="numPeople"
+                                class="form-control border-0 bg-light rounded-pill px-3 py-2" min="1" max="20" value="1" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="selectType" class="form-label small fw-bold text-muted text-uppercase">Travel Type</label>
+                            <select id="selectType" class="form-select border-0 bg-light rounded-pill px-3 py-2" required>
+                                <option value="all" selected>🔍 Budget Type</option>
+                                <option value="ဘုရားဖူး">🚌 pagoda</option>
+                                <option value="ကမ်းခြေ">🚆 beach</option>
+                                <option value="တောင်တက်ခရီး">🚕 Adventure</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tripDuration" class="form-label small fw-bold text-muted text-uppercase">Duration (Number of Days)</label>
+                            <input type="number" id="tripDuration"
+                                class="form-control border-0 bg-light rounded-pill px-3 py-2" min="1" max="30" value="3" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="selectTransport" class="form-label small fw-bold text-muted text-uppercase">Preferred Transport</label>
+                            <select id="selectTransport" class="form-select border-0 bg-light rounded-pill px-3 py-2" required>
+                                <option value="all" selected>🔍 Any Transport (Cheapest)</option>
+                                <option value="bus">🚌 Express Bus Only</option>
+                                <option value="train">🚆 Train Only</option>
+                                <option value="taxi">🚕 Taxi / Private Only</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Display Column -->
+        <div class="col-lg-8">
+            <div class="card card-custom border-0 shadow-sm h-100 bg-light bg-opacity-50">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="fw-bold text-dark mb-0">✨ Affordable Destinations</h4>
+                        <span class="badge bg-dark px-3 py-2 rounded-pill" id="matchCount">0 matches found</span>
+                    </div>
+
+                    <!-- Hidden data store for places -->
+                    <div id="placesDataStore" class="d-none">
+                        {% for place in places %}
+                        <div class="place-item" 
+                            data-id="{{ place.id }}" 
+                            data-name="{{ place.name }}"
+                            data-package="{{ place.package or 'General' }}" 
+                            data-base="{{ place.base_price_per_day or 0 }}"
+                            data-bus="{{ place.bus_fare or 0 }}" 
+                            data-train="{{ place.train_fare or 0 }}"
+                            data-taxi="{{ place.taxi_fare or 0 }}"
+                            data-lat="{{ place.latitude or 0.0 }}"
+                            data-lng="{{ place.longitude or 0.0 }}">
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Results Container -->
+                    <div id="resultsContainer" class="d-flex flex-column gap-3" style="max-height: 600px; overflow-y: auto;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const budgetInput = document.getElementById('userBudget');
+        const peopleInput = document.getElementById('numPeople');
+        const typeInput = document.getElementById('selectType');
+        const durationInput = document.getElementById('tripDuration');
+        const transportSelect = document.getElementById('selectTransport');
+
+        const resultsContainer = document.getElementById('resultsContainer');
+        const matchCountBadge = document.getElementById('matchCount');
+        const placeElements = document.querySelectorAll('.place-item');
+
+        const places = Array.from(placeElements).map(el => ({
+            id: el.getAttribute('data-id'),
+            name: el.getAttribute('data-name'),
+            package: el.getAttribute('data-package') || 'General',
+            base: parseFloat(el.getAttribute('data-base')) || 0,
+            bus: parseFloat(el.getAttribute('data-bus')) || 0,
+            train: parseFloat(el.getAttribute('data-train')) || 0,
+            taxi: parseFloat(el.getAttribute('data-taxi')) || 0,
+            lat: parseFloat(el.getAttribute('data-lat')) || 0.0,
+            lng: parseFloat(el.getAttribute('data-lng')) || 0.0
+        }));
+
+        function calculateAndRender() {
+            const userBudget = parseFloat(budgetInput.value) || 0;
+            const numPeople = parseInt(peopleInput.value) || 1;
+            const selectedType = typeInput.value;
+            const days = parseInt(durationInput.value) || 1;
+            const transportPref = transportSelect.value;
+
+            let affordablePlaces = [];
+
+            places.forEach(place => {
+                if (selectedType !== 'all') {
+                    const placePackage = String(place.package).trim().toLowerCase();
+                    const selectedPackage = String(selectedType).trim().toLowerCase();
+                    if (placePackage !== selectedPackage) return;
+                }
+
+                let fares = [];
+                if (transportPref === 'all') {
+                    fares = [
+                        { type: 'Express Bus', cost: place.bus, icon: '🚌' },
+                        { type: 'Train', cost: place.train, icon: '🚆' },
+                        { type: 'Taxi Service', cost: place.taxi, icon: '🚕' }
+                    ];
+                } else if (transportPref === 'bus') {
+                    fares = [{ type: 'Express Bus', cost: place.bus, icon: '🚌' }];
+                } else if (transportPref === 'train') {
+                    fares = [{ type: 'Train', cost: place.train, icon: '🚆' }];
+                } else if (transportPref === 'taxi') {
+                    fares = [{ type: 'Taxi Service', cost: place.taxi, icon: '🚕' }];
+                }
+
+                fares.forEach(fareObj => {
+
+    // Transportation Cost
+    
+    const totalTransportCost =
+        fareObj.cost *numPeople *2;
+
+    // Place Base Price
+   
+    const totalLivingCost =
+        place.base * days * numPeople;
+
+    // Grand Total
+    const grandTotal =
+        totalTransportCost + totalLivingCost;
+
+    if (userBudget > 0 && grandTotal <= userBudget) {
+
+        const matchPercentage = Math.round(
+            (grandTotal / userBudget) * 100
+        );
+
+        affordablePlaces.push({
+            id: place.id,
+            name: place.name,
+            package: place.package,
+
+            transportName: fareObj.type,
+            transportIcon: fareObj.icon,
+
+            // Transportation
+            transportCost: totalTransportCost,
+
+            // Place Base Price
+            baseDaily: place.base,
+
+            // Living Cost
+            livingCost: totalLivingCost,
+
+            // Grand Total
+            totalCost: grandTotal,
+
+            matchPercent: matchPercentage,
+
+            remainingBudget:
+                userBudget - grandTotal,
+
+            lat: place.lat,
+            lng: place.lng
+        });
+    }
+});
+            });
+
+            affordablePlaces.sort((a, b) => b.matchPercent - a.matchPercent);
+            matchCountBadge.innerText = `${affordablePlaces.length} options found`;
+
+            if (affordablePlaces.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-5 bg-white rounded-3 shadow-sm">
+                        <div class="fs-1 mb-2">💡</div>
+                        <h5 class="fw-bold text-dark">No destinations match your selection</h5>
+                        <p class="text-muted small mb-0">Try changing parameters.</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            affordablePlaces.forEach((item, index) => {
+                let badgeClass = item.matchPercent > 85 ? 'bg-primary' : (item.matchPercent < 50 ? 'bg-info text-dark' : 'bg-success');
+
+                html += `
+                    <div class="p-3 bg-white rounded-3 shadow-sm border-start border-4 border-success">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-2">${item.name}</h5>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="badge bg-primary rounded-pill px-3 py-2">🏷️ ${item.package}</span>
+                                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">${item.transportIcon} ${item.transportName}</span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge ${badgeClass} rounded-pill px-3 py-2 mb-1 d-inline-block">🎯 ${item.matchPercent}% Budget Match</span>
+<div class="mt-2 small text-muted">
+
+    🏨 Base Cost:
+    ${item.baseDaily.toLocaleString()} MMK/day
+
+    <br>
+
+  
+   📅 Living Cost:
+    ${item.livingCost.toLocaleString()} MMK
+
+    <br>
+
+    ${item.transportIcon} Transportation:
+    ${item.transportCost.toLocaleString()} MMK
+
+      <br>
+
+    ${item.totalCost.toLocaleString()} MMK
+
+</div>
+
+<div class="fw-bold text-dark fs-5 mt-1">
+    💰 ${item.totalCost.toLocaleString()} MMK
+</div>
+
+<small class="text-muted">
+    (${item.remainingBudget.toLocaleString()} MMK remaining)
+</small>                            </div>
+                        </div>
+
+                        <div class="border-top pt-3 mt-3 text-end">
+                            <button type="button" class="btn btn-success rounded-pill px-4"
+                                onclick="saveDraftAndProceed('${item.id}', '${item.name.replace(/'/g, "\\'")}', ${item.transportCost}, '${item.package}', ${item.lat}, ${item.lng})">
+                                📅 Select & Plan Itinerary →
+                            </button>
+                        </div>
+                    </div>`;
+            });
+
+            resultsContainer.innerHTML = html;
+        }
+
+        budgetInput.addEventListener('input', calculateAndRender);
+        peopleInput.addEventListener('input', calculateAndRender);
+        typeInput.addEventListener('change', calculateAndRender);
+        durationInput.addEventListener('input', calculateAndRender);
+        transportSelect.addEventListener('change', calculateAndRender);
+
+        calculateAndRender();
+    });
+
+    function saveDraftAndProceed(placeId, placeName, transportCost, pkg, lat, lng) {
+        const userBudget = parseFloat(document.getElementById('userBudget').value) || 0;
+        const numPeople = parseInt(document.getElementById('numPeople').value) || 1;
+        const days = parseInt(document.getElementById('tripDuration').value) || 1;
+
+        const payload = {
+            dest_place_id: placeId,
+            dest_name: placeName,
+            days: days,
+            people: numPeople,
+            user_budget: userBudget,
+            transport_cost: transportCost,
+            package: pkg,
+            lat: lat,
+            lng: lng
+        };
+
+        fetch('/user/trip/save-draft', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success' && data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                alert('Error starting trip planning: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(err => {
+            console.error('Draft save error:', err);
+            alert('Server connection error.');
+        });
+    }
+</script>
+{% endblock %}

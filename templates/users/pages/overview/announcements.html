@@ -1,0 +1,70 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Announcements{% endblock %}
+
+{% block content %}
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+
+    <!-- Header Section -->
+    <div class="mb-4">
+        <h3 class="fw-bold text-dark mb-1">📢 System Announcements & Updates</h3>
+        <p class="text-muted small">Stay informed with the latest releases, maintenance notices, and news from SmartTrip.</p>
+    </div>
+
+    <div class="d-flex flex-column gap-4 mb-5">
+        {% if announcements %}
+            {% for ann in announcements %}
+            <div class="card card-custom border-0 shadow-sm rounded-4 bg-white">
+                <div class="card-body p-4">
+                    
+                    <!-- Badge & Date Row -->
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                        {% set priority = ann.priority or ann.type or 'normal' %}
+                        <span class="badge px-3 py-1 rounded-pill text-uppercase fw-semibold" 
+                              style="font-size: 0.75rem; 
+                                     {% if priority == 'urgent' %}
+                                         background-color: rgba(220, 53, 69, 0.15); color: #dc3545; border: 1px solid #dc3545;
+                                     {% elif priority == 'important' %}
+                                         background-color: rgba(253, 126, 20, 0.15); color: #fd7e14; border: 1px solid #fd7e14;
+                                     {% else %}
+                                         background-color: rgba(212, 175, 55, 0.15); color: #b8911d; border: 1px solid #d4af37;
+                                     {% endif %}">
+                            {{ priority }}
+                        </span>
+                        
+                        <small class="text-muted">
+                            📅 {{ ann.created_at.strftime('%B %d, %Y') if ann.created_at else 'N/A' }}
+                        </small>
+                    </div>
+
+                    <!-- Title -->
+                    <h4 class="fw-bold text-dark mb-2">{{ ann.title }}</h4>
+
+                    <!-- Content -->
+                    <p class="text-secondary mb-3" style="line-height: 1.6; white-space: pre-line;">
+                        {{ ann.content }}
+                    </p>
+
+                    <!-- Footer Details -->
+                    <div class="d-flex align-items-center justify-content-between text-muted small border-top pt-3 mt-3">
+                        <span>👤 Published by: <strong>{{ ann.user.username if ann.user else 'System Admin' }}</strong></span>
+                        <small class="text-muted">{{ ann.created_at.strftime('%I:%M %p') if ann.created_at else '' }}</small>
+                    </div>
+
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-5 text-center">
+                <div class="py-4">
+                    <span class="fs-1">📢</span>
+                    <h5 class="fw-bold text-dark mt-3">No Announcements Yet</h5>
+                    <p class="text-muted small mb-0">Check back later for system news and feature updates!</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

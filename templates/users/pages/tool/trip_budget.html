@@ -1,0 +1,800 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}
+SmartTrip - Budget Breakdown
+{% endblock %}
+
+
+{% block head %}
+
+<style>
+
+    .route-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        background: #212529;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .route-card {
+        border: 0;
+        transition: all 0.2s ease;
+    }
+
+    .route-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .total-card {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+    }
+
+    .loading {
+        display: none;
+    }
+
+    .error-message {
+        display: none;
+    }
+
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container py-5 mx-auto"
+     style="max-width: 1050px;">
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <div class="d-flex justify-content-between
+                align-items-center mb-4">
+
+        <div>
+
+            <span class="badge bg-warning text-dark
+                         mb-2 fw-semibold px-3 py-1
+                         rounded-pill">
+
+               Cost Estimation
+
+            </span>
+
+            <h2 class="fw-bold text-dark mb-1">
+
+               Fare Breakdown
+
+            </h2>
+
+            <h5 class="text-muted mb-2">
+
+                {{ trip.title }}
+
+            </h5>
+
+            <p class="text-muted mb-0">
+
+                Road distance is calculated using
+                OpenStreetMap OSRM routing.
+
+            </p>
+
+        </div>
+
+
+        <a href="{{ url_for('user.itineraries_page') }}"
+           class="btn btn-outline-dark rounded-pill px-4">
+
+            Back to Trips
+
+        </a>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- SUMMARY CARDS -->
+    <!-- ================================================= -->
+
+    <div class="row g-4 mb-4">
+
+        <!-- Total Distance -->
+
+        <div class="col-md-4">
+
+            <div class="card border-0 shadow-sm
+                        p-4 h-100">
+
+                <span class="text-muted small
+                             text-uppercase fw-bold">
+
+                    Total Road Distance
+
+                </span>
+
+                <h2 class="fw-bold text-dark mt-2">
+
+                    <span id="totalDistance">
+                        0.00
+                    </span>
+
+                    <small class="fs-6">
+                        km
+                    </small>
+
+                </h2>
+
+            </div>
+
+        </div>
+
+
+       
+
+
+        <!-- Grand Total -->
+
+        <div class="col-md-4">
+
+            <div class="card total-card
+                        shadow-sm p-4 h-100">
+
+                <span class="text-dark small
+                             text-uppercase fw-bold">
+
+                    Estimated Fare
+
+                </span>
+
+                <h2 class="fw-bold text-dark mt-2">
+
+                    <span id="grandTotal">
+                        0
+                    </span>
+
+                    <small class="fs-6">
+                        MMK
+                    </small>
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+  
+
+
+    <!-- ================================================= -->
+    <!-- ROUTE DETAILS -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-body p-4">
+
+            <div class="d-flex justify-content-between
+                        align-items-center mb-3">
+
+                <h5 class="fw-bold text-dark mb-0">
+
+                    📍 Route & Distance Details
+
+                </h5>
+
+                <span class="badge bg-light text-dark border">
+
+                    OSRM Road Distance
+
+                </span>
+
+            </div>
+
+
+            <!-- Loading -->
+
+            <div id="loading"
+                 class="loading text-center py-4">
+
+                <div class="spinner-border text-warning
+                            mb-3"
+                     role="status">
+
+                </div>
+
+                <p class="text-muted mb-0">
+
+                    Calculating road distance...
+
+                </p>
+
+            </div>
+
+
+            <!-- Error -->
+
+            <div id="errorMessage"
+                 class="error-message
+                        alert alert-danger">
+
+                Unable to calculate road distance.
+
+            </div>
+
+
+            <!-- Route Table -->
+
+            <div class="table-responsive">
+
+                <table class="table align-middle">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>
+                                Route
+                            </th>
+
+                            <th>
+                                Distance
+                            </th>
+
+                           
+
+                            <th class="text-end">
+                                Transportation Fare
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="routeTableBody">
+
+                    </tbody>
+
+
+                    <tfoot>
+
+                        <tr class="border-top">
+
+                            <td colspan="3"
+                                class="fw-bold">
+
+                                Total
+
+                            </td>
+
+                            <td class="text-end
+                                       fw-bold">
+
+                                <span id="tableTotal">
+                                    0
+                                </span>
+
+                                MMK
+
+                            </td>
+
+                        </tr>
+
+                    </tfoot>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- ROUTE SEQUENCE -->
+    <!-- ================================================= -->
+
+    <div class="card border-0 shadow-sm mt-4">
+
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-3">
+
+                🧭 Trip Sequence
+
+            </h5>
+
+            <div id="routeSequence"
+                 class="d-flex flex-column gap-2">
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- BUTTONS -->
+    <!-- ================================================= -->
+
+    <div class="mt-4 d-flex
+                justify-content-end gap-2">
+
+        <a href="{{ url_for(
+                'user.itineraries_page'
+           ) }}"
+           class="btn btn-outline-dark
+                  rounded-pill px-4">
+
+            🗺️ View My Trips
+
+        </a>
+
+
+        <a href="{{ url_for(
+                'user.create_trip'
+           ) }}"
+           class="btn btn-warning
+                  text-dark fw-semibold
+                  rounded-pill px-4">
+
+            + Plan Another Trip
+
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- JAVASCRIPT -->
+<!-- ===================================================== -->
+
+<script>
+
+    /*
+    |--------------------------------------------------------------------------
+    | Route Locations from Flask
+    |--------------------------------------------------------------------------
+    */
+
+    const routeLocations =
+        {{ route_locations_json | safe }};
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Taxi Rate
+    |--------------------------------------------------------------------------
+    */
+
+    const taxiRatePerKm =1500;
+
+    /*
+    |--------------------------------------------------------------------------
+    | DOM Ready
+    |--------------------------------------------------------------------------
+    */
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function() {
+
+            renderRouteSequence();
+
+            calculateOSRMDistance();
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Render Route Sequence
+    |--------------------------------------------------------------------------
+    */
+
+    function renderRouteSequence() {
+
+        const container =
+            document.getElementById(
+                "routeSequence"
+            );
+
+        container.innerHTML = "";
+
+        routeLocations.forEach(
+            (location, index) => {
+
+                let icon = "📍";
+
+                if (
+                    location.type === "start"
+                ) {
+
+                    icon = "🚩";
+
+                }
+                else if (
+                    location.type === "destination"
+                ) {
+
+                    icon = "🏁";
+
+                }
+                else if (
+                    location.type === "restaurant"
+                ) {
+
+                    icon = "🍽️";
+
+                }
+
+
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+                row.className =
+                    "d-flex align-items-center gap-3";
+
+
+                row.innerHTML = `
+
+                    <span class="route-number">
+                        ${index + 1}
+                    </span>
+
+                    <div>
+
+                        <div class="fw-bold">
+                            ${icon}
+                            ${escapeHtml(
+                                location.name
+                            )}
+                        </div>
+
+                        <small class="text-muted">
+                            ${location.lat.toFixed(6)},
+                            ${location.lng.toFixed(6)}
+                        </small>
+
+                    </div>
+
+                `;
+
+                container.appendChild(row);
+
+            }
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Calculate OSRM Road Distance
+    |--------------------------------------------------------------------------
+    */
+
+    async function calculateOSRMDistance() {
+
+        const loading =
+            document.getElementById(
+                "loading"
+            );
+
+        const errorMessage =
+            document.getElementById(
+                "errorMessage"
+            );
+
+
+        loading.style.display = "block";
+
+        errorMessage.style.display = "none";
+
+
+        if (
+            routeLocations.length < 2
+        ) {
+
+            loading.style.display = "none";
+
+            errorMessage.textContent =
+                "At least Start and Destination are required.";
+
+            errorMessage.style.display = "block";
+
+            return;
+
+        }
+
+
+        try {
+
+            /*
+            |--------------------------------------------------------------------------
+            | OSRM coordinate format
+            |
+            | OSRM uses:
+            | longitude,latitude
+            |--------------------------------------------------------------------------
+            */
+
+            const coordinates =
+                routeLocations
+                    .map(
+                        location =>
+                            `${location.lng},${location.lat}`
+                    )
+                    .join(";");
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | OSRM API
+            |--------------------------------------------------------------------------
+            */
+
+            const url =
+                `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=false&steps=false`;
+
+
+            const response =
+                await fetch(url);
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "OSRM request failed"
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            if (
+                data.code !== "Ok"
+            ) {
+
+                throw new Error(
+                    "OSRM could not calculate route"
+                );
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | OSRM Returns meters
+            |--------------------------------------------------------------------------
+            */
+
+            const legs =
+                data.routes[0].legs;
+
+
+            let totalDistanceKm = 0;
+
+
+            const tableBody =
+                document.getElementById(
+                    "routeTableBody"
+                );
+
+            tableBody.innerHTML = "";
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Each Route Segment
+            |--------------------------------------------------------------------------
+            */
+
+            legs.forEach(
+                (leg, index) => {
+
+                    const distanceKm =
+                        leg.distance / 1000;
+
+
+                    const taxiFare =
+                        distanceKm *
+                        taxiRatePerKm;
+
+
+                    totalDistanceKm +=
+                        distanceKm;
+
+
+                    const from =
+                        routeLocations[index];
+
+
+                    const to =
+                        routeLocations[index + 1];
+
+
+                    const row =
+                        document.createElement(
+                            "tr"
+                        );
+
+
+                    row.innerHTML = `
+
+                        <td>
+
+                            <div class="fw-bold">
+                                ${escapeHtml(
+                                    from.name
+                                )}
+                            </div>
+
+                            <div class="text-muted">
+                                ↓
+                            </div>
+
+                            <div class="fw-bold">
+                                ${escapeHtml(
+                                    to.name
+                                )}
+                            </div>
+
+                        </td>
+
+
+                        <td>
+
+                            ${distanceKm.toFixed(2)}
+                            km
+
+                        </td>
+
+
+                       
+
+
+                        <td class="text-end fw-bold">
+
+                            ${formatNumber(
+                                taxiFare
+                            )}
+                            MMK
+
+                        </td>
+
+                    `;
+
+
+                    tableBody.appendChild(row);
+
+                }
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Grand Total
+            |--------------------------------------------------------------------------
+            */
+
+            const grandTotal =
+                totalDistanceKm *
+                taxiRatePerKm;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update Summary
+            |--------------------------------------------------------------------------
+            */
+
+            document.getElementById(
+                "totalDistance"
+            ).textContent =
+                totalDistanceKm.toFixed(2);
+
+
+            document.getElementById(
+                "grandTotal"
+            ).textContent =
+                formatNumber(
+                    grandTotal
+                );
+
+
+            document.getElementById(
+                "tableTotal"
+            ).textContent =
+                formatNumber(
+                    grandTotal
+                );
+
+
+            loading.style.display = "none";
+
+        }
+        catch (error) {
+
+            console.error(
+                "OSRM Error:",
+                error
+            );
+
+
+            loading.style.display = "none";
+
+
+            errorMessage.textContent =
+                "Unable to calculate road distance. Please try again.";
+
+
+            errorMessage.style.display =
+                "block";
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Number Formatting
+    |--------------------------------------------------------------------------
+    */
+
+    function formatNumber(number) {
+
+        return new Intl.NumberFormat(
+            "en-US",
+            {
+                maximumFractionDigits: 0
+            }
+        ).format(number);
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTML Escape
+    |--------------------------------------------------------------------------
+    */
+
+    function escapeHtml(text) {
+
+        const div =
+            document.createElement("div");
+
+        div.textContent = text;
+
+        return div.innerHTML;
+
+    }
+
+</script>
+
+{% endblock %}

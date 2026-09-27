@@ -1,0 +1,244 @@
+{% extends 'admin/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4" style="max-width: 1300px;">
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">🍽️ Restaurant Management</h3>
+            <p class="text-muted small mb-0">Manage registered dining options, region mappings, and map coordinates.</p>
+        </div>
+        
+        <button class="btn btn-warning rounded-3 px-4 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2 text-white" 
+                data-bs-toggle="modal" data-bs-target="#createRestaurantModal" style="background-color: #d4af37; border-color: #d4af37;">
+            <span>➕</span> Add New Restaurant
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('admin.admin_restaurants_list') }}" class="row g-2 align-items-center">
+                
+                <div class="col-12 col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted">🔍</span>
+                        <input type="text" name="search" class="form-control bg-light border-start-0" 
+                               placeholder="Search restaurant name or description..." value="{{ search_query }}">
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <select name="region" class="form-select bg-light" onchange="this.form.submit()">
+                        <option value="all">All Regions</option>
+                        {% for reg in regions %}
+                            <option value="{{ reg.id }}" {% if region_filter == reg.id|string %}selected{% endif %}>{{ reg.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <select name="sort" class="form-select bg-light" onchange="this.form.submit()">
+                        <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Sort: Newest First</option>
+                        <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Sort: Oldest First</option>
+                        <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
+                        <option value="name_desc" {% if sort_by == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-1 d-grid">
+                    <a href="{{ url_for('admin.admin_restaurants_list') }}" class="btn btn-outline-secondary" title="Reset Filters">↻</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-uppercase text-muted small fw-bold">
+                    <tr>
+                        <th class="ps-4">Restaurant Name</th>
+                        <th>Region</th>
+                        <th>Description</th>
+                        <th>Coordinates</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if restaurants %}
+                        {% for r in restaurants %}
+                        <tr>
+                            <td class="ps-4">
+                                <h6 class="fw-bold mb-0 text-dark">{{ r.name }}</h6>
+                                <small class="text-muted">Added: {{ r.created_at.strftime('%Y-%m-%d') if r.created_at else 'N/A' }}</small>
+                            </td>
+
+                            <td>
+                                <span class="badge px-3 py-1 rounded-pill" style="background-color: #d4af37; color: #fff;">
+                                    {{ r.region.name if r.region else 'Unassigned' }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="text-muted small text-truncate d-inline-block" style="max-width: 250px;">
+                                    {{ r.description if r.description else 'No description provided.' }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="badge bg-opacity-10 text-dark border" style="background-color: rgba(212, 175, 55, 0.1); border-color: #d4af37 !important;">
+                                    📍 {{ r.latitude | round(3) }}, {{ r.longitude | round(3) }}
+                                </span>
+                            </td>
+
+                            <td class="text-center pe-4">
+                                <button class="btn btn-sm btn-light border rounded-2 text-danger" 
+                                        onclick="confirmDeleteRestaurant({{ r.id }}, '{{ r.name | escape }}')" 
+                                        title="Delete Restaurant">
+                                    🗑️
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <h5>No restaurants found 🍽️</h5>
+                                <p class="small mb-0">Try updating your filters or add a new restaurant entry.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pagination.pages > 1 %}
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">
+                Showing {{ restaurants|length }} of {{ pagination.total }} items
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.admin_restaurants_list', page=pagination.prev_num, search=search_query, region=region_filter, sort=sort_by) }}">Previous</a>
+                    </li>
+                    
+                    {% for p in pagination.iter_pages() %}
+                        {% if p %}
+                            <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                                <a class="page-link {% if p == pagination.page %}bg-warning border-warning text-dark{% endif %}" href="{{ url_for('admin.admin_restaurants_list', page=p, search=search_query, region=region_filter, sort=sort_by) }}">{{ p }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.admin_restaurants_list', page=pagination.next_num, search=search_query, region=region_filter, sort=sort_by) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Create Restaurant Modal -->
+<div class="modal fade" id="createRestaurantModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="fw-bold">➕ Add New Restaurant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createRestaurantForm" onsubmit="handleCreateRestaurant(event)">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Restaurant Name</label>
+                        <input type="text" id="restaurantName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Region</label>
+                        <select id="restaurantRegionId" class="form-select" required>
+                            <option value="">Select Region</option>
+                            {% for reg in regions %}
+                                <option value="{{ reg.id }}">{{ reg.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-semibold">Latitude</label>
+                            <input type="number" step="any" id="restaurantLatitude" class="form-control" placeholder="e.g. 16.8409" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-semibold">Longitude</label>
+                            <input type="number" step="any" id="restaurantLongitude" class="form-control" placeholder="e.g. 96.1735" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Description</label>
+                        <textarea id="restaurantDescription" class="form-control" rows="3" placeholder="Brief info about specialty or features..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn text-white rounded-3 fw-semibold" style="background-color: #d4af37;">Save Restaurant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Restaurant Modal -->
+<div class="modal fade" id="deleteRestaurantModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 border-0 shadow text-center p-4">
+            <span class="fs-1 text-danger">⚠️</span>
+            <h5 class="fw-bold mt-2">Delete Restaurant?</h5>
+            <p class="small text-muted mb-4" id="deleteRestaurantTargetText">Are you sure?</p>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light w-50 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger w-50 rounded-3" onclick="submitRestaurantDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let activeRestaurantId = null;
+
+    async function handleCreateRestaurant(e) {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('name', document.getElementById('restaurantName').value);
+        formData.append('region_id', document.getElementById('restaurantRegionId').value);
+        formData.append('latitude', document.getElementById('restaurantLatitude').value);
+        formData.append('longitude', document.getElementById('restaurantLongitude').value);
+        formData.append('description', document.getElementById('restaurantDescription').value);
+
+        const res = await fetch('/admin/restaurants/create', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.status === 'success') location.reload();
+        else alert(data.message);
+    }
+
+    function confirmDeleteRestaurant(id, name) {
+        activeRestaurantId = id;
+        document.getElementById('deleteRestaurantTargetText').innerText = `Are you sure you want to remove ${name}?`;
+        new bootstrap.Modal(document.getElementById('deleteRestaurantModal')).show();
+    }
+
+    async function submitRestaurantDelete() {
+        const res = await fetch(`/admin/restaurants/delete/${activeRestaurantId}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') location.reload();
+        else alert(data.message);
+    }
+</script>
+{% endblock %}

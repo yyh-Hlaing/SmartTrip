@@ -1,0 +1,194 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Smart Map Routing{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+
+<style>
+    .leaflet-routing-container {
+        display: none !important;
+    }
+
+    
+</style>
+
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+    <div class="card card-custom border-0 shadow-sm mb-4 overflow-hidden bg-gradient"
+        style="background: linear-gradient(135deg, rgba(255,193,7,0.15) 0%, rgba(255,255,255,1) 100%);">
+        <div class="card-body p-4 p-md-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <span class="badge bg-warning text-dark mb-2 fw-semibold px-3 py-1 rounded-pill">Live
+                        Navigation</span>
+                    <h4 class="fw-bold text-dark mb-1" id="nearest-place-title">Finding Nearest Destination...</h4>
+                    <p class="text-muted mb-0">Real-time OpenStreetMap routing directions from your current position to the closest place.</p>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-white border rounded-3 p-3 text-center shadow-sm" style="min-width: 120px;">
+                        <span class="text-muted d-block" style="font-size: 0.75rem; font-weight: 600;">TOTAL PLACES</span>
+                        <span class="fw-bold text-dark fs-5">{{ places | length }}</span>
+                    </div>
+                    <div class="bg-white border rounded-3 p-3 text-center shadow-sm" style="min-width: 120px;">
+                        <span class="text-muted d-block" style="font-size: 0.75rem; font-weight: 600;">TOTAL LIKES</span>
+                        <span class="fw-bold text-dark fs-5">{{ total_favorites }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-message" class="alert alert-info shadow-sm rounded-3 mb-4 text-center" role="alert">
+        Locating your precise coordinates and calculating the optimal route to the nearest place...
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8">
+            <div class="card card-custom border-0 shadow-sm h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <h5 class="fw-bold text-dark mb-3">🗺️ Interactive Route Map</h5>
+                    <div id="map" class="rounded-3 border flex-grow-1" style="height: 600px; width: 100%; z-index: 1;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card card-custom border-0 shadow-sm h-100 overflow-hidden">
+                <img id="nearest-place-image"
+                    src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80"
+                    alt="Nearest Destination" class="card-img-top object-fit-cover" style="height: 220px;">
+
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-warning bg-opacity-25 text-dark fw-semibold">Nearest Destination (KNN)</span>
+                            <span class="text-muted small" id="nearest-place-likes">❤️ 0 Likes</span>
+                        </div>
+
+                        <h4 class="fw-bold text-dark mb-2" id="nearest-place-name">Loading...</h4>
+
+                        <p class="text-muted small mb-4"
+                            style="line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;"
+                            id="nearest-place-desc">
+                            Experience breathtaking views, cultural landmarks, and structured travel packages curated for your journey.
+                        </p>
+
+                        <div class="d-flex align-items-center mb-3 bg-light p-3 rounded-3">
+                            <div class="fs-4 me-3">📞</div>
+                            <div>
+                                <p class="mb-0 text-muted small">Contact Number</p>
+                                <p class="mb-0 fw-bold text-dark" id="nearest-place-phone">Not Available</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center bg-light p-3 rounded-3">
+                            <div class="fs-4 me-3">🏷️</div>
+                            <div>
+                                <p class="mb-0 text-muted small">Package Tier</p>
+                                <p class="mb-0 fw-bold text-dark" id="nearest-place-package">Standard Booking</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+<script>
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        return Math.hypot(lat1 - lat2, lon1 - lon2);
+    }
+
+    function getNearestPlacesKNN(currentLat, currentLng, allLocations, topN = 1) {
+        const distances = allLocations.map(loc => ({
+            dist: calculateDistance(currentLat, currentLng, loc.latitude, loc.longitude),
+            place: loc
+        }));
+        distances.sort((a, b) => a.dist - b.dist);
+        return distances.slice(0, topN).map(item => item.place);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const places = {{ places | tojson | safe }};
+        const map = L.map('map').setView([16.8409, 96.1735], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        places.forEach(place => {
+            if (place.latitude && place.longitude) {
+                L.marker([place.latitude, place.longitude]).addTo(map)
+                    .bindPopup(`<b>${place.name}</b><br>${place.package}`);
+            }
+        });
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+
+                    document.getElementById('loading-message').style.display = 'none';
+
+                    if (places.length === 0) {
+                        const loadMsg = document.getElementById('loading-message');
+                        loadMsg.style.display = 'block';
+                        loadMsg.className = "alert alert-warning shadow-sm rounded-3 mb-4 text-center";
+                        loadMsg.innerText = "No places available in the database.";
+                        return;
+                    }
+
+                    const nearestList = getNearestPlacesKNN(userLat, userLng, places, 1);
+                    const nearest = nearestList.length > 0 ? nearestList[0] : places[0];
+
+                    document.getElementById('nearest-place-title').innerText = `Route to ${nearest.name}`;
+                    document.getElementById('nearest-place-name').innerText = nearest.name;
+                    document.getElementById('nearest-place-desc').innerText = nearest.description || 'Experience breathtaking views and cultural landmarks.';
+                    document.getElementById('nearest-place-phone').innerText = nearest.phone_number;
+                    document.getElementById('nearest-place-package').innerText = nearest.package;
+                    document.getElementById('nearest-place-likes').innerText = `❤️ ${nearest.likes_count || 0} Likes`;
+
+                    if (nearest.image_file && nearest.image_file !== 'default.jpg') {
+                        document.getElementById('nearest-place-image').src = `/static/uploads/${nearest.image_file}`;
+                    }
+
+                    L.Routing.control({
+                        waypoints: [
+                            L.latLng(userLat, userLng),
+                            L.latLng(nearest.latitude, nearest.longitude)
+                        ],
+                        routeWhileDragging: false,
+                        addWaypoints: false,
+                        fitSelectedRoutes: true,
+                        showAlternatives: false,
+                        lineOptions: {
+                            styles: [{ color: '#ffc107', opacity: 0.9, weight: 6 }]
+                        }
+                    }).addTo(map);
+                },
+                (error) => {
+                    console.error("Geolocation error:", error);
+                    const loadMsg = document.getElementById('loading-message');
+                    loadMsg.className = "alert alert-danger shadow-sm rounded-3 mb-4 text-center";
+                    loadMsg.innerText = "Could not access your location. Please enable location permissions.";
+                },
+                { enableHighAccuracy: true }
+            );
+        } else {
+            const loadMsg = document.getElementById('loading-message');
+            loadMsg.className = "alert alert-danger shadow-sm rounded-3 mb-4 text-center";
+            loadMsg.innerText = "Geolocation is not supported by your current browser.";
+        }
+    });
+</script>
+{% endblock %}

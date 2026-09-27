@@ -1,0 +1,350 @@
+{% extends 'admin/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4" style="max-width: 1300px;">
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">📢 System Announcements</h3>
+            <p class="text-muted small mb-0">Broadcast updates, maintenance notices, and important news to users.</p>
+        </div>
+        
+        <button class="btn btn-warning rounded-3 px-4 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2 text-white" 
+                data-bs-toggle="modal" data-bs-target="#createAnnouncementModal" style="background-color: #d4af37; border-color: #d4af37;">
+            <span>➕</span> New Announcement
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('admin.admin_announcements_list') }}" class="row g-2 align-items-center">
+                
+                <div class="col-12 col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted">🔍</span>
+                        <input type="text" name="search" class="form-control bg-light border-start-0" 
+                               placeholder="Search title or content..." value="{{ search_query }}">
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <select name="priority" class="form-select bg-light" onchange="this.form.submit()">
+                        <option value="all" {% if priority_filter == 'all' %}selected{% endif %}>All Priorities</option>
+                        <option value="normal" {% if priority_filter == 'normal' %}selected{% endif %}>Normal</option>
+                        <option value="important" {% if priority_filter == 'important' %}selected{% endif %}>Important</option>
+                        <option value="urgent" {% if priority_filter == 'urgent' %}selected{% endif %}>Urgent</option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <select name="sort" class="form-select bg-light" onchange="this.form.submit()">
+                        <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Sort: Newest First</option>
+                        <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Sort: Oldest First</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-1 d-grid">
+                    <a href="{{ url_for('admin.admin_announcements_list') }}" class="btn btn-outline-secondary" title="Reset Filters">↻</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Announcements Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-uppercase text-muted small fw-bold">
+                    <tr>
+                        <th class="ps-4">Title</th>
+                        <th>Priority</th>
+                        <th>Content Preview</th>
+                        <th>Author</th>
+                        <th>Date</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if announcements %}
+                        {% for ann in announcements %}
+                        <tr>
+                            <!-- Title -->
+                            <td class="ps-4">
+                                <h6 class="fw-bold mb-0 text-dark">{{ ann.title }}</h6>
+                            </td>
+
+                            <td>
+                                <span class="badge px-3 py-1 rounded-pill text-uppercase" style="background-color: {% if ann.priority == 'urgent' %}#dc3545{% elif ann.priority == 'important' %}#fd7e14{% else %}#d4af37{% endif %}; color: #fff; font-size: 0.7rem;">
+                                    {{ ann.priority }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="text-muted small text-truncate d-inline-block" style="max-width: 250px;">
+                                    {{ ann.content }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <small class="fw-semibold text-secondary">{{ ann.user.username if ann.user else 'System' }}</small>
+                            </td>
+
+                            <td>
+                                <small class="text-muted">{{ ann.created_at.strftime('%Y-%m-%d %H:%M') if ann.created_at else 'N/A' }}</small>
+                            </td>
+
+                            <td class="text-center pe-4">
+                                <div class="btn-group gap-1">
+                                    <button class="btn btn-sm btn-light border rounded-2" 
+                                            onclick="viewAnnouncementDetails('{{ ann.title | escape }}', '{{ ann.priority | escape }}', `{{ ann.content | escape }}`, '{{ ann.user.username if ann.user else 'System' }}', '{{ ann.created_at.strftime('%Y-%m-%d %H:%M') if ann.created_at else '' }}')" 
+                                            title="View Details">
+                                        👁️
+                                    </button>
+                                    <button class="btn btn-sm btn-light border rounded-2" 
+                                            onclick="openEditAnnouncementModal({{ ann.id }}, '{{ ann.title | escape }}', '{{ ann.priority }}', `{{ ann.content | escape }}`)" 
+                                            title="Edit Announcement">
+                                        ✏️
+                                    </button>
+                                    <button class="btn btn-sm btn-light border rounded-2 text-danger" 
+                                            onclick="confirmDeleteAnnouncement({{ ann.id }}, '{{ ann.title | escape }}')" 
+                                            title="Delete Announcement">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <h5>No announcements found 📢</h5>
+                                <p class="small mb-0">Create your first broadcast announcement using the button above.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Footer -->
+        {% if pagination.pages > 1 %}
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">
+                Showing {{ announcements|length }} of {{ pagination.total }} items
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.admin_announcements_list', page=pagination.prev_num, search=search_query, priority=priority_filter, sort=sort_by) }}">Previous</a>
+                    </li>
+                    
+                    {% for p in pagination.iter_pages() %}
+                        {% if p %}
+                            <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                                <a class="page-link {% if p == pagination.page %}bg-warning border-warning text-dark{% endif %}" href="{{ url_for('admin.admin_announcements_list', page=p, search=search_query, priority=priority_filter, sort=sort_by) }}">{{ p }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.admin_announcements_list', page=pagination.next_num, search=search_query, priority=priority_filter, sort=sort_by) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Create Announcement Modal -->
+<div class="modal fade" id="createAnnouncementModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="fw-bold">➕ Create New Announcement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form onsubmit="handleCreateAnnouncement(event)">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Title</label>
+                        <input type="text" id="createTitle" class="form-control" placeholder="e.g. Scheduled System Maintenance" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Priority Level</label>
+                        <select id="createPriority" class="form-select">
+                            <option value="normal">Normal</option>
+                            <option value="important">Important</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Content Message</label>
+                        <textarea id="createContent" class="form-control" rows="5" placeholder="Write full announcement details here..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn text-white rounded-3 fw-semibold" style="background-color: #d4af37;">Publish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Announcement Modal -->
+<div class="modal fade" id="editAnnouncementModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="fw-bold">✏️ Edit Announcement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form onsubmit="handleEditAnnouncement(event)">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Title</label>
+                        <input type="text" id="editTitle" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Priority Level</label>
+                        <select id="editPriority" class="form-select">
+                            <option value="normal">Normal</option>
+                            <option value="important">Important</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Content Message</label>
+                        <textarea id="editContent" class="form-control" rows="5" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn text-white rounded-3 fw-semibold" style="background-color: #d4af37;">Update Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Announcement Details Modal -->
+<div class="modal fade" id="announcementDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <div>
+                    <span id="modalPriorityBadge" class="badge rounded-pill text-uppercase mb-2" style="font-size: 0.7rem; background-color: #d4af37; color: #fff;">Priority</span>
+                    <h5 class="fw-bold text-dark mb-0" id="modalAnnouncementTitle">Title</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded-3 small">
+                    <div>
+                        <strong class="text-muted">Author:</strong> <span id="modalAnnouncementAuthor" class="fw-semibold text-dark">-</span>
+                    </div>
+                    <div>
+                        <strong class="text-muted">Date:</strong> <span id="modalAnnouncementDate" class="text-muted">-</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-muted">Announcement Content</label>
+                    <textarea id="modalAnnouncementContent" class="form-control bg-light" rows="5" readonly></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Announcement Modal -->
+<div class="modal fade" id="deleteAnnouncementModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 border-0 shadow text-center p-4">
+            <span class="fs-1 text-danger">⚠️</span>
+            <h5 class="fw-bold mt-2">Delete Announcement?</h5>
+            <p class="small text-muted mb-4" id="deleteAnnouncementTargetText">Are you sure?</p>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light w-50 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger w-50 rounded-3" onclick="submitAnnouncementDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let activeAnnouncementId = null;
+
+    async function handleCreateAnnouncement(e) {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('title', document.getElementById('createTitle').value);
+        formData.append('priority', document.getElementById('createPriority').value);
+        formData.append('content', document.getElementById('createContent').value);
+
+        const res = await fetch('/admin/announcements/create', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.status === 'success') location.reload();
+        else alert(data.message);
+    }
+
+    function openEditAnnouncementModal(id, title, priority, content) {
+        activeAnnouncementId = id;
+        document.getElementById('editTitle').value = title;
+        document.getElementById('editPriority').value = priority;
+        document.getElementById('editContent').value = content;
+        new bootstrap.Modal(document.getElementById('editAnnouncementModal')).show();
+    }
+
+    async function handleEditAnnouncement(e) {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('title', document.getElementById('editTitle').value);
+        formData.append('priority', document.getElementById('editPriority').value);
+        formData.append('content', document.getElementById('editContent').value);
+
+        const res = await fetch(`/admin/announcements/update/${activeAnnouncementId}`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.status === 'success') location.reload();
+        else alert(data.message);
+    }
+
+    function viewAnnouncementDetails(title, priority, content, author, date) {
+        document.getElementById('modalAnnouncementTitle').innerText = title;
+        document.getElementById('modalAnnouncementContent').value = content;
+        document.getElementById('modalAnnouncementAuthor').innerText = author;
+        document.getElementById('modalAnnouncementDate').innerText = date;
+        
+        const badge = document.getElementById('modalPriorityBadge');
+        badge.innerText = priority;
+        if (priority === 'urgent') badge.style.backgroundColor = '#dc3545';
+        else if (priority === 'important') badge.style.backgroundColor = '#fd7e14';
+        else badge.style.backgroundColor = '#d4af37';
+
+        new bootstrap.Modal(document.getElementById('announcementDetailsModal')).show();
+    }
+
+    function confirmDeleteAnnouncement(id, title) {
+        activeAnnouncementId = id;
+        document.getElementById('deleteAnnouncementTargetText').innerText = `Are you sure you want to remove "${title}"?`;
+        new bootstrap.Modal(document.getElementById('deleteAnnouncementModal')).show();
+    }
+
+    async function submitAnnouncementDelete() {
+        const res = await fetch(`/admin/announcements/delete/${activeAnnouncementId}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'success') location.reload();
+        else alert(data.message);
+    }
+</script>
+{% endblock %}

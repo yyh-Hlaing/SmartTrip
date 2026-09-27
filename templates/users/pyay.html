@@ -1,0 +1,1439 @@
+
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - My Profile{% endblock %}
+
+{% block content %}
+
+<!-- =========================================================
+     SMARTTRIP PLANNER
+========================================================= -->
+
+<div class="card p-4 shadow-sm mb-4">
+
+    <h4 class="mb-3">
+        ✈️ SmartTrip Planner
+    </h4>
+
+    <div class="row g-3">
+
+        <!-- ORIGIN -->
+        <div class="col-md-3">
+
+            <label class="form-label">
+                ထွက်မည့်မြို့ (Origin)
+            </label>
+
+            <input
+                type="text"
+                id="originInput"
+                class="form-control"
+                placeholder="ဥပမာ - Yangon"
+            >
+
+        </div>
+
+
+        <!-- DESTINATION -->
+        <div class="col-md-3">
+
+            <label class="form-label">
+                သွားမည့်မြို့ (Destination)
+            </label>
+
+            <input
+                type="text"
+                id="destInput"
+                class="form-control"
+                value="Pyay"
+                placeholder="ဥပမာ - Pyay"
+            >
+
+        </div>
+
+
+        <!-- DAYS -->
+        <div class="col-md-3">
+
+            <label class="form-label">
+                ရက်အရေအတွက် (Days)
+            </label>
+
+            <input
+                type="number"
+                id="daysInput"
+                class="form-control"
+                value="3"
+                min="1"
+                max="7"
+            >
+
+        </div>
+
+
+        <!-- BUTTON -->
+        <div class="col-md-3 d-flex align-items-end">
+
+            <button
+                type="button"
+                id="planTripButton"
+                class="btn btn-primary w-100"
+                onclick="planTrip(event)"
+            >
+                Plan Trip with AI 🚀
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     LOADING
+========================================================= -->
+
+<div
+    id="loadingIndicator"
+    style="display:none;"
+    class="text-center my-4"
+>
+
+    <div
+        class="spinner-border text-primary"
+        role="status"
+    >
+        <span class="visually-hidden">
+            Loading...
+        </span>
+    </div>
+
+    <p class="mt-2">
+        🤖 AI က ခရီးစဉ်ကို စီစဉ်နေပါသည်...
+        ကျေးဇူးပြု၍ စောင့်ဆိုင်းပါ။
+    </p>
+
+</div>
+
+
+<!-- =========================================================
+     ERROR MESSAGE
+========================================================= -->
+
+<div
+    id="errorBox"
+    class="alert alert-danger"
+    style="display:none;"
+></div>
+
+
+<!-- =========================================================
+     RESULTS
+========================================================= -->
+
+<div
+    id="resultsSection"
+    style="display:none;"
+>
+
+
+    <!-- =====================================================
+         MAP + COST
+    ====================================================== -->
+
+    <div class="row mb-4">
+
+        <!-- MAP -->
+
+        <div class="col-md-8">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-white">
+                    🗺️ Route Map
+                </div>
+
+                <div class="card-body p-0">
+
+                    <div
+                        id="map"
+                        style="
+                            height:350px;
+                            width:100%;
+                        "
+                    ></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- COST -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100 bg-light">
+
+                <div class="card-body">
+
+                    <h5 class="card-title text-success">
+                        💰 Cost Estimates
+                    </h5>
+
+
+                    <p class="mb-2">
+
+                        🚗
+                        <strong>
+                            အဝေးပြေးကားခ:
+                        </strong>
+
+                        <span id="busCost">
+                            -
+                        </span>
+
+                    </p>
+
+
+                    <p class="mb-2">
+
+                        🛺
+                        <strong>
+                            မြို့တွင်း အိုးဝေ/Tuk-Tuk ခ:
+                        </strong>
+
+                        <span id="localCost">
+                            -
+                        </span>
+
+                    </p>
+
+
+                    <p class="mb-2">
+
+                        🏨
+                        <strong>
+                            ဟိုတယ်ခ:
+                        </strong>
+
+                        <span id="hotelCost">
+                            -
+                        </span>
+
+                    </p>
+
+
+                    <p class="mb-2">
+
+                        🍽️
+                        <strong>
+                            စားသောက်စရိတ်:
+                        </strong>
+
+                        <span id="foodCost">
+                            -
+                        </span>
+
+                    </p>
+
+
+                    <p class="mb-2">
+
+                        🎫
+                        <strong>
+                            ဝင်ကြေးများ:
+                        </strong>
+
+                        <span id="entryFees">
+                            -
+                        </span>
+
+                    </p>
+
+
+                    <hr>
+
+
+                    <p class="mb-0 fw-bold">
+
+                        💰
+                        <strong>
+                            စုစုပေါင်းခန့်မှန်းစရိတ်:
+                        </strong>
+
+                        <span id="totalCost">
+                            -
+                        </span>
+
+                    </p>
+
+
+                    <small class="text-muted">
+                        ဈေးနှုန်းများသည် ခန့်မှန်းခြေသာ ဖြစ်ပါသည်။
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         ITINERARY
+    ====================================================== -->
+
+    <h4 class="mb-3">
+        📅 Day-by-Day Itinerary
+    </h4>
+
+    <div
+        class="row"
+        id="itineraryCardsContainer"
+    ></div>
+
+
+    <!-- =====================================================
+         RECOMMENDATIONS
+    ====================================================== -->
+
+    <h4 class="mt-4 mb-3">
+        🌟 Recommendations
+    </h4>
+
+
+    <div class="row">
+
+
+        <!-- HOTELS -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm mb-3">
+
+                <div class="card-header bg-warning text-dark">
+                    🏨 Hotels
+                </div>
+
+                <ul
+                    class="list-group list-group-flush"
+                    id="hotelList"
+                ></ul>
+
+            </div>
+
+        </div>
+
+
+        <!-- RESTAURANTS -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm mb-3">
+
+                <div class="card-header bg-success text-white">
+                    🍲 Restaurants
+                </div>
+
+                <ul
+                    class="list-group list-group-flush"
+                    id="restaurantList"
+                ></ul>
+
+            </div>
+
+        </div>
+
+
+        <!-- ATTRACTIONS -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm mb-3">
+
+                <div class="card-header bg-info text-white">
+                    🏛️ Attractions
+                </div>
+
+                <ul
+                    class="list-group list-group-flush"
+                    id="attractionList"
+                ></ul>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         LOCAL TIPS
+    ====================================================== -->
+
+    <h4 class="mt-4 mb-3">
+        💡 Local Travel Tips
+    </h4>
+
+
+    <div class="card shadow-sm mb-3">
+
+        <ul
+            class="list-group list-group-flush"
+            id="tipsList"
+        ></ul>
+
+    </div>
+
+
+    <!-- =====================================================
+         PACKING
+    ====================================================== -->
+
+    <h4 class="mt-4 mb-3">
+        🧳 Packing Suggestions
+    </h4>
+
+
+    <div class="card shadow-sm mb-3">
+
+        <ul
+            class="list-group list-group-flush"
+            id="packingList"
+        ></ul>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     LEAFLET CSS
+========================================================= -->
+
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+
+<!-- =========================================================
+     LEAFLET JS
+========================================================= -->
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
+<script>
+"use strict";
+
+const GEMINI_MODEL = "gemini-3.5-flash";
+
+let mapInstance = null;
+
+async function planTrip(event) {
+    console.log("🚀 planTrip() started");
+
+    if (event) {
+        event.preventDefault();
+    }
+
+    const originElement = document.getElementById("originInput");
+    const destinationElement = document.getElementById("destInput");
+    const daysElement = document.getElementById("daysInput");
+
+    const button = document.getElementById("planTripButton");
+    const loading = document.getElementById("loadingIndicator");
+    const results = document.getElementById("resultsSection");
+    const errorBox = document.getElementById("errorBox");
+
+    if (!originElement || !destinationElement || !daysElement) {
+        console.error("Trip input fields not found.");
+        return;
+    }
+
+    const origin = originElement.value.trim();
+    const destination = destinationElement.value.trim();
+    const days = parseInt(daysElement.value, 10) || 3;
+
+    if (!origin) {
+        alert("Please enter origin city.");
+        originElement.focus();
+        return;
+    }
+
+    if (!destination) {
+        alert("Please enter destination city.");
+        destinationElement.focus();
+        return;
+    }
+
+    if (days < 1 || days > 7) {
+        alert("Days must be between 1 and 7.");
+        daysElement.focus();
+        return;
+    }
+
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY") {
+        showError("Gemini API key is not configured.");
+        return;
+    }
+
+    if (errorBox) {
+        errorBox.style.display = "none";
+        errorBox.textContent = "";
+    }
+
+    if (loading) {
+        loading.style.display = "block";
+    }
+
+    if (results) {
+        results.style.display = "none";
+    }
+
+    if (button) {
+        button.disabled = true;
+        button.dataset.originalText = button.innerHTML;
+        button.innerHTML = "🤖 AI Planning...";
+    }
+
+    try {
+        const prompt = `
+You are SmartTrip, a professional Myanmar travel planner.
+
+Create a realistic ${days}-day travel itinerary.
+
+Origin: ${origin}
+Destination: ${destination}
+
+IMPORTANT:
+- Return ONLY valid JSON.
+- No Markdown.
+- No code fences.
+- Use double quotes.
+- Do not put unescaped double quotes inside strings.
+- Return exactly ${days} itinerary objects.
+- Use realistic Myanmar travel information.
+- Prices must be in Myanmar Kyat.
+- Keep descriptions short.
+- Use Myanmar language where appropriate.
+
+Return exactly this structure:
+
+{
+    "origin": "${escapeJSON(origin)}",
+    "destination": "${escapeJSON(destination)}",
+    "days_count": ${days},
+
+    "estimated_transport_cost": "MMK amount",
+    "local_transport_cost": "MMK amount",
+    "estimated_hotel_cost": "MMK amount",
+    "estimated_food_cost": "MMK amount",
+    "estimated_entry_fees": "MMK amount",
+    "estimated_total_cost": "MMK amount",
+
+    "hotels": [
+        {
+            "name": "Hotel name",
+            "price_range": "MMK price per night",
+            "description": "Short description"
+        }
+    ],
+
+    "restaurants": [
+        {
+            "name": "Restaurant name",
+            "specialty": "Food specialty",
+            "description": "Short description"
+        }
+    ],
+
+    "attractions": [
+        {
+            "name": "Attraction name",
+            "description": "Short description"
+        }
+    ],
+
+    "itinerary": [
+        {
+            "day": 1,
+            "title": "Day 1 title",
+            "activities": [
+                "Activity 1",
+                "Activity 2",
+                "Activity 3"
+            ]
+        }
+    ],
+
+    "local_tips": [
+        "Tip 1",
+        "Tip 2",
+        "Tip 3"
+    ],
+
+    "packing_suggestions": [
+        "Item 1",
+        "Item 2",
+        "Item 3"
+    ]
+}
+`;
+
+        const apiUrl =
+            "https://generativelanguage.googleapis.com/v1beta/models/" +
+            GEMINI_MODEL +
+            ":generateContent?key=" +
+            encodeURIComponent(GEMINI_API_KEY);
+
+        console.log("Calling Gemini...");
+
+        const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            {
+                                text: prompt
+                            }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.2,
+                    topP: 0.9,
+                    maxOutputTokens: 8000,
+                    responseMimeType: "application/json"
+                }
+            })
+        });
+
+        const responseText = await response.text();
+
+        console.log("Gemini HTTP status:", response.status);
+        console.log("Gemini raw response:", responseText);
+
+        if (!response.ok) {
+            let errorMessage = `Gemini API Error (${response.status})`;
+
+            try {
+                const errorData = JSON.parse(responseText);
+
+                if (errorData?.error?.message) {
+                    errorMessage = errorData.error.message;
+                }
+            } catch (e) {
+                console.error("Could not parse Gemini error:", e);
+            }
+
+            throw new Error(errorMessage);
+        }
+
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            throw new Error("Gemini returned invalid HTTP JSON.");
+        }
+
+        if (
+            !data.candidates ||
+            !Array.isArray(data.candidates) ||
+            data.candidates.length === 0
+        ) {
+            throw new Error("Gemini returned no candidates.");
+        }
+
+        const candidate = data.candidates[0];
+
+        console.log(
+            "Gemini finish reason:",
+            candidate.finishReason
+        );
+
+        if (candidate.finishReason === "MAX_TOKENS") {
+            throw new Error(
+                "Gemini response was cut off. Please try again."
+            );
+        }
+
+        if (candidate.finishReason === "SAFETY") {
+            throw new Error(
+                "Gemini blocked the response."
+            );
+        }
+
+        const rawText =
+            candidate.content?.parts
+                ?.map(part => part.text || "")
+                .join("")
+                .trim();
+
+        if (!rawText) {
+            throw new Error(
+                "Gemini returned an empty response."
+            );
+        }
+
+        console.log("RAW GEMINI JSON:", rawText);
+
+        const cleaned = cleanGeminiJSON(rawText);
+
+        let itineraryData;
+
+        try {
+            itineraryData = JSON.parse(cleaned);
+        } catch (error) {
+            console.error(
+                "JSON parse error:",
+                error
+            );
+
+            throw new Error(
+                "Gemini returned invalid itinerary JSON."
+            );
+        }
+
+        validateItinerary(
+            itineraryData,
+            days
+        );
+
+        populateItinerary(
+            itineraryData
+        );
+
+        await populateMap(
+            origin,
+            destination
+        );
+
+        if (loading) {
+            loading.style.display = "none";
+        }
+
+        if (results) {
+            results.style.display = "block";
+        }
+
+        console.log(
+            "✅ Trip generated successfully."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Error generating itinerary:",
+            error
+        );
+
+        showError(
+            error.message ||
+            "Unknown error occurred."
+        );
+
+    } finally {
+
+        if (loading) {
+            loading.style.display = "none";
+        }
+
+        if (button) {
+            button.disabled = false;
+
+            if (button.dataset.originalText) {
+                button.innerHTML =
+                    button.dataset.originalText;
+            }
+        }
+    }
+}
+
+
+function showError(message) {
+
+    const errorBox =
+        document.getElementById("errorBox");
+
+    const results =
+        document.getElementById("resultsSection");
+
+    if (results) {
+        results.style.display = "none";
+    }
+
+    if (errorBox) {
+        errorBox.style.display = "block";
+        errorBox.textContent =
+            "❌ " + message;
+    } else {
+        alert("❌ " + message);
+    }
+}
+
+
+function escapeJSON(value) {
+
+    return String(value)
+        .replace(/\\/g, "\\\\")
+        .replace(/"/g, '\\"')
+        .replace(/\r/g, "\\r")
+        .replace(/\n/g, "\\n");
+}
+
+
+function cleanGeminiJSON(text) {
+
+    let result =
+        String(text || "").trim();
+
+    result = result
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+
+    const first =
+        result.indexOf("{");
+
+    const last =
+        result.lastIndexOf("}");
+
+    if (
+        first !== -1 &&
+        last !== -1 &&
+        last > first
+    ) {
+        result =
+            result.substring(
+                first,
+                last + 1
+            );
+    }
+
+    return result.trim();
+}
+
+
+function validateItinerary(data, expectedDays) {
+
+    if (!data || typeof data !== "object") {
+        throw new Error(
+            "Invalid itinerary object."
+        );
+    }
+
+    if (!Array.isArray(data.itinerary)) {
+        throw new Error(
+            "Itinerary array is missing."
+        );
+    }
+
+    if (data.itinerary.length !== expectedDays) {
+        console.warn(
+            `Expected ${expectedDays} days, received ${data.itinerary.length}.`
+        );
+    }
+
+    data.itinerary.forEach(
+        (day, index) => {
+
+            if (!day || typeof day !== "object") {
+                throw new Error(
+                    `Invalid Day ${index + 1}`
+                );
+            }
+
+            if (!Array.isArray(day.activities)) {
+                day.activities = [];
+            }
+        }
+    );
+
+    if (!Array.isArray(data.hotels)) {
+        data.hotels = [];
+    }
+
+    if (!Array.isArray(data.restaurants)) {
+        data.restaurants = [];
+    }
+
+    if (!Array.isArray(data.attractions)) {
+        data.attractions = [];
+    }
+
+    if (!Array.isArray(data.local_tips)) {
+        data.local_tips = [];
+    }
+
+    if (!Array.isArray(data.packing_suggestions)) {
+        data.packing_suggestions = [];
+    }
+}
+
+
+function populateItinerary(data) {
+
+    setText(
+        "busCost",
+        data.estimated_transport_cost
+    );
+
+    setText(
+        "localCost",
+        data.local_transport_cost
+    );
+
+    setText(
+        "hotelCost",
+        data.estimated_hotel_cost
+    );
+
+    setText(
+        "foodCost",
+        data.estimated_food_cost
+    );
+
+    setText(
+        "entryFees",
+        data.estimated_entry_fees
+    );
+
+    setText(
+        "totalCost",
+        data.estimated_total_cost
+    );
+
+    const container =
+        document.getElementById(
+            "itineraryCardsContainer"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = "";
+
+    data.itinerary.forEach(
+        (day, index) => {
+
+            const col =
+                document.createElement("div");
+
+            col.className =
+                "col-md-4 mb-3";
+
+            const dayNumber =
+                day.day || index + 1;
+
+            const title =
+                day.title ||
+                `Day ${dayNumber}`;
+
+            const activities =
+                Array.isArray(day.activities)
+                    ? day.activities
+                    : [];
+
+            const activitiesHTML =
+                activities
+                    .map(
+                        activity => `
+                            <li class="list-group-item">
+                                ${escapeHTML(activity)}
+                            </li>
+                        `
+                    )
+                    .join("");
+
+            col.innerHTML = `
+                <div class="card shadow-sm h-100">
+
+                    <div class="card-header bg-primary text-white">
+                        <strong>
+                            📅 Day ${escapeHTML(dayNumber)}
+                        </strong>
+                    </div>
+
+                    <div class="card-body">
+
+                        <h6 class="card-title">
+                            ${escapeHTML(title)}
+                        </h6>
+
+                        <ul class="list-group list-group-flush">
+                            ${activitiesHTML}
+                        </ul>
+
+                    </div>
+
+                </div>
+            `;
+
+            container.appendChild(col);
+        }
+    );
+
+    renderList(
+        "hotelList",
+        data.hotels,
+        item => `
+            <strong>
+                ${escapeHTML(item.name || "")}
+            </strong>
+            <br>
+            <small>
+                ${escapeHTML(item.price_range || "")}
+                -
+                ${escapeHTML(item.description || "")}
+            </small>
+        `
+    );
+
+    renderList(
+        "restaurantList",
+        data.restaurants,
+        item => `
+            <strong>
+                ${escapeHTML(item.name || "")}
+            </strong>
+            <br>
+            <small>
+                ${escapeHTML(item.specialty || "")}
+                -
+                ${escapeHTML(item.description || "")}
+            </small>
+        `
+    );
+
+    renderList(
+        "attractionList",
+        data.attractions,
+        item => `
+            <strong>
+                ${escapeHTML(item.name || "")}
+            </strong>
+            <br>
+            <small>
+                ${escapeHTML(item.description || "")}
+            </small>
+        `
+    );
+
+    renderSimpleList(
+        "tipsList",
+        data.local_tips
+    );
+
+    renderSimpleList(
+        "packingList",
+        data.packing_suggestions
+    );
+}
+
+
+function renderList(
+    elementId,
+    items,
+    formatter
+) {
+
+    const element =
+        document.getElementById(elementId);
+
+    if (!element) {
+        return;
+    }
+
+    element.innerHTML = "";
+
+    if (
+        !Array.isArray(items) ||
+        items.length === 0
+    ) {
+        element.innerHTML = `
+            <li class="list-group-item text-muted">
+                No recommendations available.
+            </li>
+        `;
+        return;
+    }
+
+    items.forEach(item => {
+
+        const li =
+            document.createElement("li");
+
+        li.className =
+            "list-group-item";
+
+        li.innerHTML =
+            formatter(item);
+
+        element.appendChild(li);
+    });
+}
+
+
+function renderSimpleList(
+    elementId,
+    items
+) {
+
+    const element =
+        document.getElementById(elementId);
+
+    if (!element) {
+        return;
+    }
+
+    element.innerHTML = "";
+
+    if (!Array.isArray(items)) {
+        return;
+    }
+
+    items.forEach(item => {
+
+        const li =
+            document.createElement("li");
+
+        li.className =
+            "list-group-item";
+
+        li.textContent =
+            String(item);
+
+        element.appendChild(li);
+    });
+}
+
+
+function setText(id, value) {
+
+    const element =
+        document.getElementById(id);
+
+    if (!element) {
+        return;
+    }
+
+    element.textContent =
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+            ? value
+            : "N/A";
+}
+
+
+function escapeHTML(value) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        String(value ?? "");
+
+    return div.innerHTML;
+}
+
+
+async function populateMap(
+    origin,
+    destination
+) {
+
+    if (mapInstance) {
+
+        try {
+            mapInstance.remove();
+        } catch (e) {
+            console.warn(e);
+        }
+
+        mapInstance = null;
+    }
+
+    const mapElement =
+        document.getElementById("map");
+
+    if (!mapElement) {
+        return;
+    }
+
+    async function geocode(place) {
+
+        try {
+
+            const url =
+                "https://nominatim.openstreetmap.org/search" +
+                "?format=json" +
+                "&q=" +
+                encodeURIComponent(
+                    place + ", Myanmar"
+                ) +
+                "&limit=1";
+
+            const response =
+                await fetch(url);
+
+            if (!response.ok) {
+                return null;
+            }
+
+            const data =
+                await response.json();
+
+            if (
+                Array.isArray(data) &&
+                data.length > 0
+            ) {
+
+                return {
+                    lat: parseFloat(data[0].lat),
+                    lng: parseFloat(data[0].lon)
+                };
+            }
+
+            return null;
+
+        } catch (error) {
+
+            console.warn(
+                "Geocoding error:",
+                error
+            );
+
+            return null;
+        }
+    }
+
+    const originCoord =
+        await geocode(origin);
+
+    const destinationCoord =
+        await geocode(destination);
+
+    let centerLat = 16.8661;
+    let centerLng = 96.1951;
+
+    if (destinationCoord) {
+        centerLat = destinationCoord.lat;
+        centerLng = destinationCoord.lng;
+    }
+
+    mapInstance =
+        L.map("map", {
+            center: [
+                centerLat,
+                centerLng
+            ],
+            zoom: 8
+        });
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            attribution:
+                "&copy; OpenStreetMap contributors"
+        }
+    ).addTo(mapInstance);
+
+    if (originCoord) {
+
+        L.marker([
+            originCoord.lat,
+            originCoord.lng
+        ])
+        .addTo(mapInstance)
+        .bindPopup(
+            "📍 " + escapeHTML(origin)
+        );
+    }
+
+    if (destinationCoord) {
+
+        L.marker([
+            destinationCoord.lat,
+            destinationCoord.lng
+        ])
+        .addTo(mapInstance)
+        .bindPopup(
+            "📍 " + escapeHTML(destination)
+        )
+        .openPopup();
+    }
+
+    if (
+        originCoord &&
+        destinationCoord
+    ) {
+
+        const bounds =
+            L.latLngBounds(
+                [
+                    originCoord.lat,
+                    originCoord.lng
+                ],
+                [
+                    destinationCoord.lat,
+                    destinationCoord.lng
+                ]
+            );
+
+        mapInstance.fitBounds(
+            bounds,
+            {
+                padding: [50, 50]
+            }
+        );
+    }
+
+    setTimeout(() => {
+
+        if (mapInstance) {
+            mapInstance.invalidateSize();
+        }
+
+    }, 300);
+}
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        console.log(
+            "✅ SmartTrip Planner loaded."
+        );
+
+        console.log(
+            "✅ Gemini Direct API mode."
+        );
+
+        const button =
+            document.getElementById(
+                "planTripButton"
+            );
+
+        if (button) {
+
+            button.addEventListener(
+                "click",
+                planTrip
+            );
+        }
+    }
+);
+
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (event.key !== "Enter") {
+            return;
+        }
+
+        const active =
+            document.activeElement;
+
+        if (!active) {
+            return;
+        }
+
+        const allowed = [
+            "originInput",
+            "destInput",
+            "daysInput"
+        ];
+
+        if (
+            allowed.includes(active.id)
+        ) {
+
+            event.preventDefault();
+
+            planTrip(event);
+        }
+    }
+);
+
+</script>
+
+
+
+<!-- =========================================================
+     CSS
+========================================================= -->
+
+<style>
+
+#map {
+
+    border-radius:
+        0 0 8px 8px;
+
+}
+
+
+.list-group-item {
+
+    background-color:
+        transparent;
+
+}
+
+
+.card-header {
+
+    font-weight:
+        600;
+
+}
+
+
+#loadingIndicator
+.spinner-border {
+
+    width:
+        3rem;
+
+    height:
+        3rem;
+
+}
+
+
+#errorBox {
+
+    white-space:
+        pre-line;
+
+}
+
+</style>
+
+
+{% endblock %}

@@ -1,0 +1,301 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Build Itinerary & Save{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+    <div class="row g-4">
+
+        <!-- Left Column: Trip Overview & Budget Summary -->
+        <div class="col-lg-4">
+            <div class="card card-custom border-0 shadow-sm sticky-top" style="top: 1.5rem; z-index: 100;">
+                <div class="card-body p-4">
+                    
+                    <!-- Trip Header -->
+                    <div class="border-bottom pb-3 mb-3">
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 mb-2">Draft Mode</span>
+                        <h3 class="fw-bold text-dark mb-1">📍 {{ trip.dest_name }}</h3>
+                        <p class="text-muted small mb-0">
+                            🗓️ <strong>{{ trip.days }}</strong> Days | 👤 <strong>{{ trip.people }}</strong> Traveler(s)
+                        </p>
+                    </div>
+
+                    <!-- Budget & Cost Breakdown -->
+                    <h5 class="fw-bold text-dark mb-3">💰 Cost & Budget Overview</h5>
+                    
+                    <div class="p-3 bg-light rounded-3 mb-3 border">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">Target Budget:</span>
+                            <span class="fw-bold text-dark">{{ "{:,.0f}".format(trip.user_budget) }} MMK</span>
+                        </div>
+                       
+                    </div>
+
+                    <!-- Budget Alert Status -->
+                    <div id="budget-panel" class="alert alert-info py-2 px-3 mb-4 d-flex justify-content-between align-items-center">
+                        <span class="small fw-semibold">Status:</span>
+                        <span id="budget-status" class="badge bg-success">✅ Within Budget</span>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button type="button" class="btn btn-success w-100 rounded-pill py-2.5 fw-semibold shadow-sm" onclick="confirmAndSaveToDB()">
+                        💾 Save Trip to Database
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Day-by-Day Itinerary Builder -->
+        <div class="col-lg-8">
+            <div class="card card-custom border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                        <div>
+                            <h4 class="fw-bold text-dark mb-1">🗺️ Itinerary Builder</h4>
+                            <p class="text-muted small mb-0">Search and add nearby attractions to each day using KNN recommendations.</p>
+                        </div>
+                    </div>
+
+                    <div id="daysWrapper" class="d-flex flex-column gap-4">
+                        <!-- Javascript will populate days here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    window.tripConfig = {
+        destPlaceId: "{{ trip.dest_place_id }}",
+        destName: "{{ trip.dest_name }}",
+        days: parseInt("{{ trip.days }}") || 1,
+        people: parseInt("{{ trip.people }}") || 1,
+        userBudget: parseFloat("{{ trip.user_budget }}") || 0,
+        transportCost: parseFloat("{{ trip.transport_cost }}") || 0,
+        currentLat: parseFloat("{{ trip.lat }}") || 0.0,
+        currentLng: parseFloat("{{ trip.lng }}") || 0.0,
+        totalCost: parseFloat("{{ trip.transport_cost }}") || 0,
+        activities: {}
+    };
+
+    document.addEventListener("DOMContentLoaded", function () {
+        initItineraryBuilder();
+    });
+
+    function initItineraryBuilder() {
+        const daysWrapper = document.getElementById('daysWrapper');
+        let html = '';
+
+        for (let day = 1; day <= window.tripConfig.days; day++) {
+            window.tripConfig.activities[day] = [];
+            
+            html += `
+                <div class="p-3 bg-light rounded-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong class="text-primary fs-5">Day ${day}</strong>
+                    </div>
+                    
+                    <div id="day-${day}-activities" class="mb-3">
+                        <ul class="list-unstyled mb-0" id="list-day-${day}"></ul>
+                    </div>
+
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text bg-white border-end-0">🔍</span>
+                        <input type="text" id="search-input-${day}" 
+                            class="form-control border-start-0" 
+                            placeholder="Search nearby attractions..."
+                            oninput="debounceSearch(${day})">
+                    </div>
+
+                    <div id="knn-suggestions-${day}" class="row g-2 mt-1"></div>
+                </div>
+            `;
+        }
+        
+        daysWrapper.innerHTML = html;
+
+        // Automatically add main destination to Day 1
+        addLocationToDay(1, window.tripConfig.destName, `place_${window.tripConfig.destPlaceId}`, window.tripConfig.currentLat, window.tripConfig.currentLng, true);
+        updateBudgetUI();
+    }
+
+    let searchTimeout = null;
+    function debounceSearch(dayNum) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const query = document.getElementById(`search-input-${dayNum}`).value;
+            fetchKNNRecommendations(dayNum, query);
+        }, 300);
+    }
+
+    function fetchKNNRecommendations(dayNum, query = '') {
+        const container = document.getElementById(`knn-suggestions-${dayNum}`);
+        container.innerHTML = `<div class="text-muted small col-12">Loading nearby places...</div>`;
+
+        fetch('/api/knn/live-search', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ 
+                lat: window.tripConfig.currentLat, 
+                lng: window.tripConfig.currentLng, 
+                query: query, 
+                limit: 6 
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            container.innerHTML = '';
+            const results = data.locations || data.nearest || [];
+            
+            if (!results || results.length === 0) {
+                container.innerHTML = '<div class="text-muted small col-12">No recommendations found.</div>';
+                return;
+            }
+
+            results.forEach(loc => {
+                const exists = window.tripConfig.activities[dayNum].some(a => a.id === loc.id);
+                if (exists) return;
+
+                container.innerHTML += `
+                    <div class="col-md-6">
+                        <div class="p-2 bg-white rounded-3 d-flex justify-content-between align-items-center border">
+                            <div class="text-truncate me-2">
+                                <strong class="d-block text-dark small text-truncate" title="${loc.name}">${loc.name}</strong>
+                                <span class="text-muted" style="font-size: 0.7rem;">${loc.distance_km || '?'} km away</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-dark rounded-pill py-0 px-2" style="font-size: 0.75rem;"
+                                onclick="addLocationToDay(${dayNum}, '${loc.name.replace(/'/g, "\\'")}', '${loc.id}', ${loc.lat || 0}, ${loc.lng || 0}, false)">
+                                + Add
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        })
+        .catch(err => {
+            console.error('Fetch error:', err);
+            container.innerHTML = '<div class="text-danger small col-12">Error loading places.</div>';
+        });
+    }
+
+    function addLocationToDay(dayNum, locName, locId, lat, lng, isMain = false) {
+        window.tripConfig.activities[dayNum].push({ id: locId, name: locName, lat: lat, lng: lng, isMain: isMain });
+        
+        if (lat !== 0 && lng !== 0) {
+            window.tripConfig.currentLat = lat;
+            window.tripConfig.currentLng = lng;
+        }
+
+        if (!isMain) {
+            window.tripConfig.totalCost += (15000 * window.tripConfig.people); 
+            updateBudgetUI();
+        }
+
+        renderDayActivities(dayNum);
+        
+        const searchInput = document.getElementById(`search-input-${dayNum}`);
+        if (searchInput) searchInput.value = '';
+        fetchKNNRecommendations(dayNum, '');
+    }
+
+    function removeLocationFromDay(dayNum, locId) {
+        const activities = window.tripConfig.activities[dayNum];
+        const index = activities.findIndex(a => a.id === locId);
+        if (index > -1) {
+            const removedItem = activities.splice(index, 1)[0];
+            
+            if (!removedItem.isMain) {
+                window.tripConfig.totalCost -= (15000 * window.tripConfig.people);
+                updateBudgetUI();
+            }
+            renderDayActivities(dayNum);
+        }
+    }
+
+    function renderDayActivities(dayNum) {
+        const listContainer = document.getElementById(`list-day-${dayNum}`);
+        listContainer.innerHTML = '';
+        
+        window.tripConfig.activities[dayNum].forEach(item => {
+            listContainer.innerHTML += `
+                <li class="d-flex justify-content-between align-items-center bg-white p-2 mb-1 rounded border">
+                    <span class="text-truncate me-2">
+                        <span class="text-success me-1">✓</span> <strong>${item.name}</strong>
+                        ${item.isMain ? '<span class="badge bg-success-subtle text-success ms-1">Main Destination</span>' : ''}
+                    </span>
+                    ${!item.isMain ? `<button type="button" class="btn btn-link text-danger p-0 text-decoration-none" onclick="removeLocationFromDay(${dayNum}, '${item.id}')">✕</button>` : ''}
+                </li>
+            `;
+        });
+    }
+
+    function updateBudgetUI() {
+        const budgetTotalEl = document.getElementById('budget-total');
+        const activitiesCostEl = document.getElementById('activities-cost');
+        const statusBadge = document.getElementById('budget-status');
+        const panel = document.getElementById('budget-panel');
+        
+        if (!budgetTotalEl) return;
+
+        const totalCost = window.tripConfig.totalCost;
+        const budget = window.tripConfig.userBudget;
+        const extraActivitiesCost = totalCost - window.tripConfig.transportCost;
+
+        budgetTotalEl.innerText = `${totalCost.toLocaleString()} MMK`;
+        if (activitiesCostEl) {
+            activitiesCostEl.innerText = `${extraActivitiesCost.toLocaleString()} MMK`;
+        }
+        
+        if (totalCost > budget) {
+            statusBadge.className = 'badge bg-danger';
+            statusBadge.innerText = `⚠️ Over by ${(totalCost - budget).toLocaleString()} MMK`;
+            panel.className = 'alert alert-warning py-2 px-3 mb-4 d-flex justify-content-between align-items-center';
+        } else {
+            statusBadge.className = 'badge bg-success';
+            statusBadge.innerText = '✅ Within Budget';
+            panel.className = 'alert alert-info py-2 px-3 mb-4 d-flex justify-content-between align-items-center';
+        }
+    }
+
+    function confirmAndSaveToDB() {
+        const payload = {
+            title: `Trip to ${window.tripConfig.destName} (${window.tripConfig.days} Days, ${window.tripConfig.people} Travelers)`,
+            dest_place_id: window.tripConfig.destPlaceId,
+            days_count: window.tripConfig.days,
+            total_budget: window.tripConfig.totalCost,
+            number_of_people: window.tripConfig.people,
+            start_lat: window.tripConfig.currentLat,
+            start_lng: window.tripConfig.currentLng,
+            daily_plans: window.tripConfig.activities
+        };
+
+        fetch('/trip/confirm', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('🎉 Trip plan successfully saved to Database!');
+                window.location.href = `/user/budget?trip_id=${data.trip_id}`;
+            } else {
+                alert('Error saving trip: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(err => {
+            console.error('Database save error:', err);
+            alert('Server connection error while saving trip.');
+        });
+    }
+</script>
+{% endblock %}

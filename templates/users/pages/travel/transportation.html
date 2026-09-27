@@ -1,0 +1,1810 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Transportation Options & Fares{% endblock %}
+
+{% block content %}
+<div class="container py-4 mx-auto" style="max-width: 1300px;">
+    <div class="card border-0 shadow-sm mb-4 rounded-4">
+        <div class="card-body p-4">
+            <form id="busSearchForm" action="/api/bus-search" method="GET">
+                <input type="hidden" name="searchType" value="express" />
+
+                <div class="row g-3">
+                    <div class="col-md-6 col-lg-3">
+                        <label for="selectFrom" class="form-label fw-semibold text-secondary small">FROM
+                            (DEPARTURE)</label>
+                        <select class="form-select rounded-3 py-2" name="sourceId" id="selectFrom" required>
+                            <option value="" disabled selected>Select Departure...</option>
+                            <option value="Ahtet Min Hla">Ahtet Min Hla (အထက်မင်းလှ)</option>
+                            <option value="AungLan">AungLan (အောင်လံ)</option>
+                            <option value="Aungpan">Aungpan (အောင်ပန်း)</option>
+                            <option value="Ayadaw">Ayadaw (အရာတော်)</option>
+                            <option value="Ayetharyar">Ayetharyar (အေးသာယာ)</option>
+                            <option value="Bagan/Nyaung-U">Bagan/Nyaung-U (ပုဂံ/ညောင်ဦး)</option>
+                            <option value="Bago">Bago (ပဲခူး)</option>
+                            <option value="Bahin">Bahin (ဗဟင်း)</option>
+                            <option value="Banmauk">Banmauk (ဗန်းမောက်)</option>
+                            <option value="Bhamo">Bhamo (ဗန်းမော်)</option>
+                            <option value="Bilin">Bilin (ဘီးလင်း)</option>
+                            <option value="Bilu Island">Bilu Island (ဘီလူးကျွန်း)</option>
+                            <option value="Bogale">Bogale (ဘိုကလေး)</option>
+                            <option value="Bokpyin">Bokpyin (ဘုတ်ပြင်း)</option>
+                            <option value="Budalin">Budalin (ဘုတလင်)</option>
+                            <option value="Chauk">Chauk (ချောက်)</option>
+                            <option value="Chaung Kauk">Chaung Kauk (ချောင်းကောက်)</option>
+                            <option value="Chaung Thar">Chaung Thar (ချောင်းသာ)</option>
+                            <option value="ChaungU">ChaungU (ချောင်းဦး)</option>
+                            <option value="Chaungzon">Chaungzon (ချောင်းဆုံ)</option>
+                            <option value="Dagonayar(Yangon)">Dagonayar(Yangon) (ဒဂုံဧရာ(ရန်ကုန်))</option>
+                            <option value="Daik-U">Daik-U (ဒိုက်ဦး)</option>
+                            <option value="Danai">Danai (တနိုင်း)</option>
+                            <option value="Danubyu">Danubyu (ဓနုဖြူ)</option>
+                            <option value="Dawei">Dawei (ထားဝယ်)</option>
+                            <option value="Dedaye">Dedaye (ဒေးဒရဲ)</option>
+                            <option value="Demoso">Demoso (ဒီမောဆို)</option>
+                            <option value="Gangaw">Gangaw (ဂန့်ဂေါ)</option>
+                            <option value="Gwa">Gwa (ဂွ)</option>
+                            <option value="Gyae Gone">Gyae Gone (ဂွေးကုန်း)</option>
+                            <option value="Gyeiktaw">Gyeiktaw (ဂျိတ်တော)</option>
+                            <option value="Gyobingauk">Gyobingauk (ကြို့ပင်ကောက်)</option>
+                            <option value="Hakha">Hakha (ဟားခါး)</option>
+                            <option value="Ham Myint Mo">Ham Myint Mo (ဟံမြင့်မိုရ်)</option>
+                            <option value="HeHoe">HeHoe (ဟဲဟိုး)</option>
+                            <option value="Hinthada">Hinthada (ဟင်္သာတ)</option>
+                            <option value="Hlegu">Hlegu (လှည်းကူး)</option>
+                            <option value="Hopin">Hopin (ဟိုပင်)</option>
+                            <option value="Hopong">Hopong (ဟိုပုံး)</option>
+                            <option value="Hpa-An">Hpa-An (ဘားအံ)</option>
+                            <option value="Hpakan">Hpakan (ဖားကန့်)</option>
+                            <option value="Hpayargyi">Hpayargyi (ဘုရားကြီး)</option>
+                            <option value="Hseni">Hseni (သိန္နီ)</option>
+                            <option value="Hsig Khaung">Hsig Khaung (ဆိုက်ခေါင်)</option>
+                            <option value="Hsihseng">Hsihseng (ဆီဆိုင်)</option>
+                            <option value="Hsipaw">Hsipaw (သီပေါ)</option>
+                            <option value="Htonebo">Htonebo (ထုံးဘို)</option>
+                            <option value="Indaw">Indaw (အင်းတော်)</option>
+                            <option value="Ingapu">Ingapu (အင်္ဂပူ)</option>
+                            <option value="Inn Ta Kaw">Inn Ta Kaw (အင်းတကော်)</option>
+                            <option value="InnMa">InnMa (အင်းမ)</option>
+                            <option value="Ka Tun">Ka Tun (ကတွန်)</option>
+                            <option value="Kalaw">Kalaw (ကလော)</option>
+                            <option value="Kale">Kale (ကလေး)</option>
+                            <option value="Kalewa">Kalewa (ကလေး၀)</option>
+                            <option value="Kamma">Kamma (ကမ္မ)</option>
+                            <option value="Kanbalu">Kanbalu (ကန့်ဘလူ)</option>
+                            <option value="Kanbya">Kanbya (ကန်ပြား)</option>
+                            <option value="Kanpetlet">Kanpetlet (ကန်ပက်လက်)</option>
+                            <option value="Kar Li">Kar Li (ကာလိ)</option>
+                            <option value="Katha">Katha (ကသာ)</option>
+                            <option value="Kawkareik">Kawkareik (ကော့ကရိတ်)</option>
+                            <option value="Kawthaung">Kawthaung (ကော့သောင်း)</option>
+                            <option value="Kaytumadi">Kaytumadi (ကေတုမတီ)</option>
+                            <option value="Keng Tung">Keng Tung (ကျိုင်းတုံ)</option>
+                            <option value="Khin-U">Khin-U (ခင်ဦး)</option>
+                            <option value="Kho Lam">Kho Lam (ခိုလမ်)</option>
+                            <option value="Koebin">Koebin (ကိုးပင်)</option>
+                            <option value="Kon Zaung">Kon Zaung (ကုန်းဇောင်း)</option>
+                            <option value="Kume">Kume (ကူမဲ)</option>
+                            <option value="Kunhing">Kunhing (ကွန်ဟိန်း)</option>
+                            <option value="Kutkai">Kutkai (ကွတ်ခိုင်)</option>
+                            <option value="Kwin Hla">Kwin Hla (ကွင်းလှ)</option>
+                            <option value="Kyaikkami">Kyaikkami (ကျိုက်ခမီ)</option>
+                            <option value="Kyaikkaw">Kyaikkaw (ကျိုက်ကော်)</option>
+                            <option value="Kyaiklat">Kyaiklat (ကျိုက်လတ်)</option>
+                            <option value="Kyaiktiyo">Kyaiktiyo (ကျိုက်ထီးရိုး)</option>
+                            <option value="Kyaikto">Kyaikto (ကျိုက်ထို)</option>
+                            <option value="Kyainseikgyi">Kyainseikgyi (ကြာအင်းဆိပ်ကြီး)</option>
+                            <option value="Kyangin">Kyangin (ကြံခင်း)</option>
+                            <option value="Kyar Kan">Kyar Kan (ကြာကန်)</option>
+                            <option value="Kyauk Gyi">Kyauk Gyi (ကျောက်ကြီး)</option>
+                            <option value="Kyaukme">Kyaukme (ကျောက်မဲ)</option>
+                            <option value="Kyaukpadaung">Kyaukpadaung (ကျောက်ပန်းတောင်း)</option>
+                            <option value="Kyaukse">Kyaukse (ကျောက်ဆည်)</option>
+                            <option value="Kyauktaga">Kyauktaga (ကျောက်တံခါး)</option>
+                            <option value="Kyauktaw">Kyauktaw (ကျောက်တော်)</option>
+                            <option value="Kyaung Taw Yar">Kyaung Taw Yar (ကျောင်းတော်ရာ)</option>
+                            <option value="Kyaw">Kyaw (ကျော)</option>
+                            <option value="Kyeintali">Kyeintali (ကျိန္တလီ)</option>
+                            <option value="Kyun Hla">Kyun Hla (ကျွန်းလှ)</option>
+                            <option value="Kyunchaung">Kyunchaung (ကျွန်းချောင်း)</option>
+                            <option value="Lashio">Lashio (လားရှိုး)</option>
+                            <option value="Lat Yin Ma">Lat Yin Ma (လက်ယက်မ)</option>
+                            <option value="Laukkaing">Laukkaing (လောက်ကိုင်)</option>
+                            <option value="Lawksawk">Lawksawk (ရပ်စောက်)</option>
+                            <option value="Lay Taung">Lay Taung (လေးတောင်)</option>
+                            <option value="Lay Tine Sin">Lay Tine Sin (လေးတိုင်စင်)</option>
+                            <option value="Lelu">Lelu (လဲလူ)</option>
+                            <option value="Letpadan">Letpadan (လက်ပံတန်း)</option>
+                            <option value="Letpanhla">Letpanhla (လက်ပံလှ)</option>
+                            <option value="Lewe">Lewe (လယ်ဝေး)</option>
+                            <option value="Loikaw">Loikaw (လွိုင်ကော်)</option>
+                            <option value="Loilem">Loilem (လွိုင်လင်)</option>
+                            <option value="Lonkin">Lonkin (လုံးခင်း)</option>
+                            <option value="Ma-ei">Ma-ei (မအီ)</option>
+                            <option value="Mabein">Mabein (မဘိမ်း)</option>
+                            <option value="Madaya">Madaya (မတ္တရာ)</option>
+                            <option value="Magway">Magway (မကွေး)</option>
+                            <option value="Mahar Myaing">Mahar Myaing (မဟာမြိုင်)</option>
+                            <option value="Mahlaing">Mahlaing (မလှိုင်)</option>
+                            <option value="Malun">Malun (မလွန်)</option>
+                            <option value="Mandalay">Mandalay (မန္တလေး)</option>
+                            <option value="Maubin">Maubin (မအူပင်)</option>
+                            <option value="Maw Hun">Maw Hun (မော်ဟန်)</option>
+                            <option value="Maw Luu">Maw Luu (မော်လူး)</option>
+                            <option value="Mawlamyine">Mawlamyine (မော်လမြိုင်)</option>
+                            <option value="Me Za Li Kone">Me Za Li Kone (မဲဇလီကုန်း)</option>
+                            <option value="Mee The">Mee The (မဲသည်)</option>
+                            <option value="Meiktila">Meiktila (မိတ္ထီလာ)</option>
+                            <option value="Migyaungye">Migyaungye (မိချောင်းရဲ)</option>
+                            <option value="MinBya">MinBya (မင်းပြား)</option>
+                            <option value="Minbu">Minbu (မင်းဘူး)</option>
+                            <option value="Moebyel">Moebyel (မိုးဗြဲ)</option>
+                            <option value="Mogaung">Mogaung (မိုးကောင်း)</option>
+                            <option value="Mogok">Mogok (မိုးကုတ်)</option>
+                            <option value="Mohnyin">Mohnyin (မိုးညှင်း)</option>
+                            <option value="Moke Pa Lin">Moke Pa Lin (မုပ္ပလင်)</option>
+                            <option value="Moke Ta Ma">Moke Ta Ma (မုတ္တမ)</option>
+                            <option value="Mong Hsat">Mong Hsat (မိုင်းဆတ်)</option>
+                            <option value="Mong Hsu">Mong Hsu (မိုင်းရှုး)</option>
+                            <option value="Mong Khat">Mong Khat (မိုင်းခတ်)</option>
+                            <option value="Mong Pawn">Mong Pawn (မိုင်းပွန်)</option>
+                            <option value="Mong Ton">Mong Ton (မိုင်းတုံ)</option>
+                            <option value="Mong Yang">Mong Yang (မိုင်းယန်း)</option>
+                            <option value="Monghpyak">Monghpyak (မိုင်းဖြတ်)</option>
+                            <option value="Mongla">Mongla (မိုင်းလား)</option>
+                            <option value="Mongmit">Mongmit (မိုးမိတ်)</option>
+                            <option value="Mongping">Mongping (မိုင်းပျဉ်း)</option>
+                            <option value="Mongyai">Mongyai (မိုင်းရယ်)</option>
+                            <option value="Mongyawng">Mongyawng (မိုင်းယောင်း)</option>
+                            <option value="Mongyu">Mongyu (မိုင်းယု)</option>
+                            <option value="Monywa">Monywa (မုံရွာ)</option>
+                            <option value="Mudon">Mudon (မုဒုံ)</option>
+                            <option value="Mukangyi">Mukangyi (မူကမ်းကြီး)</option>
+                            <option value="Muse">Muse (မူဆယ်)</option>
+                            <option value="Mya Taung">Mya Taung (မြတောင်)</option>
+                            <option value="Myaing">Myaing (မြိုင်)</option>
+                            <option value="Myanaung">Myanaung (မြန်အောင်)</option>
+                            <option value="Myaungmya">Myaungmya (မြောင်းမြ)</option>
+                            <option value="Myawaddy">Myawaddy (မြဝတီ)</option>
+                            <option value="Myeik">Myeik (မြိတ်)</option>
+                            <option value="Myingyan">Myingyan (မြင်းခြံ)</option>
+                            <option value="Myinmu">Myinmu (မြင်းမူ)</option>
+                            <option value="Myitchay">Myitchay (မြစ်ခြေ)</option>
+                            <option value="Myitkyina">Myitkyina (မြစ်ကြီးနား)</option>
+                            <option value="Myitnge">Myitnge (မြစ်ငယ်)</option>
+                            <option value="Myittha">Myittha (မြစ်သား)</option>
+                            <option value="Myo Hla">Myo Hla (မြို့လှ)</option>
+                            <option value="Myogyi">Myogyi (မြို့ကြီး)</option>
+                            <option value="Myothit">Myothit (မြို့သစ်)</option>
+                            <option value="Namhkan">Namhkan (နမ့်ခမ်း)</option>
+                            <option value="Namhkok">Namhkok (နမ့်ခုတ်)</option>
+                            <option value="Namsang">Namsang (နမ့်စန်)</option>
+                            <option value="Namsi Awng">Namsi Awng (နန့်စီးအောင်)</option>
+                            <option value="Nan Mar">Nan Mar (နမ်မား)</option>
+                            <option value="Nanmati">Nanmati (နမ္မတီး)</option>
+                            <option value="Nar Kaung Mu">Nar Kaung Mu (နားကောင်းမူ့)</option>
+                            <option value="Natmauk">Natmauk (နတ်မောက်)</option>
+                            <option value="Natogyi">Natogyi (နွားထိုးကြီး)</option>
+                            <option value="Nattalin">Nattalin (နတ္တလင်း)</option>
+                            <option value="Naungtayar">Naungtayar (နောင်တရား)</option>
+                            <option value="Nawnghkio">Nawnghkio (နောင်ချို)</option>
+                            <option value="Naypyitaw (Bawga)">Naypyitaw (Bawga) (နေပြည်တော် (ဘောဂ))</option>
+                            <option value="Naypyitaw (Myoma)">Naypyitaw (Myoma) (နေပြည်တော် (မြို့မ))</option>
+                            <option value="Naypyitaw (Thapyaygone)">Naypyitaw (Thapyaygone) (နေပြည်တော် (သပြေကုန်း))
+                            </option>
+                            <option value="Ngape">Ngape (ငဖဲ)</option>
+                            <option value="Ngar O">Ngar O (ငါးအိုး)</option>
+                            <option value="Ngathayauk">Ngathayauk (ငါ့သရောက်)</option>
+                            <option value="Ngwe Saung">Ngwe Saung (ငွေဆောင်)</option>
+                            <option value="Nyaung Chay Htauk">Nyaung Chay Htauk (ညောင်ခြေထောက်)</option>
+                            <option value="Nyaung Khar Shey">Nyaung Khar Shey (ညောင်ခါးရှည်)</option>
+                            <option value="Nyaung Kone">Nyaung Kone (ညောင်ကုန်း)</option>
+                            <option value="Nyaung Lay Pin">Nyaung Lay Pin (ညောင်လေးပင်)</option>
+                            <option value="Nyaung Pin Thar">Nyaung Pin Thar (ညောင်ပင်သာ)</option>
+                            <option value="Nyaung Shwe(Inle)">Nyaung Shwe(Inle) (ညောင်ရွှေ(အင်းလေး))</option>
+                            <option value="NyaungPin">NyaungPin (ညောင်ပင်)</option>
+                            <option value="Nyaungdon">Nyaungdon (ညောင်တုန်း)</option>
+                            <option value="Oak Pho">Oak Pho (အုတ်ဖို)</option>
+                            <option value="Oke Shit Pin">Oke Shit Pin (ဥသျှစ်ပင်)</option>
+                            <option value="Oktwin">Oktwin (အုတ်တွင်း)</option>
+                            <option value="Padaung">Padaung (ပန်းတောင်း)</option>
+                            <option value="Padein">Padein (ပဒါန်း)</option>
+                            <option value="Padigon">Padigon (ပုတီးကုန်း)</option>
+                            <option value="Pakokku">Pakokku (ပခုက္ကူ)</option>
+                            <option value="Pala">Pala (ပလ)</option>
+                            <option value="Palauk">Palauk (ပလောက်)</option>
+                            <option value="Palaw">Palaw (ပုလော)</option>
+                            <option value="Pale">Pale (ပုလဲ)</option>
+                            <option value="Pathein">Pathein (ပုသိမ်)</option>
+                            <option value="Pauk">Pauk (ပေါက်)</option>
+                            <option value="Paukkhaung">Paukkhaung (ပေါက်ခေါင်း)</option>
+                            <option value="Pauktaw">Pauktaw (ပေါက်တော)</option>
+                            <option value="Paung">Paung (ပေါင်)</option>
+                            <option value="Paungdale">Paungdale (ပေါင်းတလည်)</option>
+                            <option value="Paungde">Paungde (ပေါင်းတည်)</option>
+                            <option value="Payangazu">Payangazu (ဘုရားငါးဆူ)</option>
+                            <option value="Pekon">Pekon (ဖယ်ခုံ)</option>
+                            <option value="Penwegon">Penwegon (ပဲနွယ်ကုန်း)</option>
+                            <option value="Petye">Petye (ဘက်ရဲ)</option>
+                            <option value="Phyu">Phyu (ဖြူး)</option>
+                            <option value="Pindaya">Pindaya (ပင်းတယ)</option>
+                            <option value="Pinlaung">Pinlaung (ပင်လောင်း)</option>
+                            <option value="Pinlon">Pinlon (ပင်လုံ)</option>
+                            <option value="Pinphyit">Pinphyit (ပင်ပြစ်)</option>
+                            <option value="Poneparkyin">Poneparkyin (ပုံပါကျင်)</option>
+                            <option value="Ponnagyun">Ponnagyun (ပုဏ္ဏားကျွန်း)</option>
+                            <option value="Popa">Popa (ပုပ္ပါး)</option>
+                            <option value="Pwintbyu">Pwintbyu (ပွင့်ဖြူ)</option>
+                            <option value="Pyapon">Pyapon (ဖျာပုံ)</option>
+                            <option value="Pyawbwe">Pyawbwe (ပျော်ဘွယ်)</option>
+                            <option value="Pyay">Pyay (ပြည်)</option>
+                            <option value="Pyin Oo Lwin">Pyin Oo Lwin (ပြင်ဦးလွင်)</option>
+                            <option value="Pyinbongyi">Pyinbongyi (ပျဉ်ပုံကြီး)</option>
+                            <option value="Pyinsi">Pyinsi (ပြင်စီ)</option>
+                            <option value="Pyuntasa">Pyuntasa (ပြွန်တန်ဆာ)</option>
+                            <option value="Sa Lay">Sa Lay (စလေ)</option>
+                            <option value="Sadaung">Sadaung (ဆားတောင်)</option>
+                            <option value="Sagaing">Sagaing (စစ်ကိုင်း)</option>
+                            <option value="Sahmaw">Sahmaw (ဆားမှော်)</option>
+                            <option value="Saing Pyin">Saing Pyin (စိုင်ပြင်)</option>
+                            <option value="Salin">Salin (စလင်း)</option>
+                            <option value="Sane">Sane (စနဲ)</option>
+                            <option value="Satthwa">Satthwa (ဆပ်သွား)</option>
+                            <option value="Sea and Lake Resort">Sea and Lake Resort (Sea and Lake Resort)</option>
+                            <option value="Seikphyu">Seikphyu (ဆိပ်ဖြူ)</option>
+                            <option value="Shauktaw">Shauktaw (ရှောက်တော)</option>
+                            <option value="Shwe Ku">Shwe Ku (ရွှေကူ)</option>
+                            <option value="Shwe Nyaung">Shwe Nyaung (ရွှေညောင်)</option>
+                            <option value="Shwe Set Taw">Shwe Set Taw (ရွှေစက်တော်)</option>
+                            <option value="Shwebo">Shwebo (ရွှေဘို)</option>
+                            <option value="Shweda">Shweda (ရွှေဒါး)</option>
+                            <option value="Shwedaung">Shwedaung (ရွှေတောင်)</option>
+                            <option value="Shwehlae">Shwehlae (ရွှေလှေ)</option>
+                            <option value="Shwethaungyan">Shwethaungyan (ရွေသောင်ယံ)</option>
+                            <option value="Si Sone Gone">Si Sone Gone (ဆီဆုံကုန်း)</option>
+                            <option value="Sin Hpyu Kyun">Sin Hpyu Kyun (ဆင်ဖြူကျွန်း)</option>
+                            <option value="Sinbaungwe">Sinbaungwe (ဆင်ပေါင်ဝဲ)</option>
+                            <option value="Sinde">Sinde (ဆင်တဲ)</option>
+                            <option value="Sintgaing">Sintgaing (စဉ့်ကိုင်)</option>
+                            <option value="Swar">Swar (ဆွာ)</option>
+                            <option value="Tabayin">Tabayin (ဒီပဲယင်း)</option>
+                            <option value="Tachileik">Tachileik (တာချီလိတ်)</option>
+                            <option value="Tamu">Tamu (တမူး)</option>
+                            <option value="Tangyan">Tangyan (တန့်ယန်း)</option>
+                            <option value="Tanintharyi">Tanintharyi (တနင်္သာရီ)</option>
+                            <option value="Tarlay">Tarlay (တာလေ)</option>
+                            <option value="Tat Taung">Tat Taung (တပ်တောင်)</option>
+                            <option value="Tatkon">Tatkon (တပ်ကုန်း)</option>
+                            <option value="Taungdwingyi">Taungdwingyi (တောင်တွင်းကြီး)</option>
+                            <option value="Taunggyi">Taunggyi (တောင်ကြီး)</option>
+                            <option value="Taungni">Taungni (တောင်နီ)</option>
+                            <option value="Taungoo">Taungoo (တောင်ငူ)</option>
+                            <option value="Taungtha">Taungtha (တောင်သာ)</option>
+                            <option value="Taw Kyel Inn">Taw Kyel Inn (တောကျွဲအင်း)</option>
+                            <option value="Taze">Taze (တန့်ဆည်)</option>
+                            <option value="Tha Bye Kon">Tha Bye Kon (သပြေကုန်း)</option>
+                            <option value="Tha Phay Wa">Tha Phay Wa (သပြေဝ)</option>
+                            <option value="Thabeikkyin">Thabeikkyin (သပိတ်ကျဉ်း)</option>
+                            <option value="Thanbyuzayat">Thanbyuzayat (သံဖြူဇရပ်)</option>
+                            <option value="Thar Ga Ya">Thar Ga Ya (သာဂရ)</option>
+                            <option value="Thar Ma Nya">Thar Ma Nya (သာမည)</option>
+                            <option value="Thar Wut Hti">Thar Wut Hti (သာဝတ္ထိ)</option>
+                            <option value="Thaton">Thaton (သထုံ)</option>
+                            <option value="Thazi">Thazi (သာစည်)</option>
+                            <option value="Thegon">Thegon (သဲကုန်း)</option>
+                            <option value="Thit Yar Kaut">Thit Yar Kaut (သစ်ရာကောက်)</option>
+                            <option value="Ti Kyit">Ti Kyit (တီကျစ်)</option>
+                            <option value="Tigyaing">Tigyaing (ထီးချိုင့်)</option>
+                            <option value="Tilin">Tilin (ထီးလင်း)</option>
+                            <option value="Wathtikan">Wathtikan (ဝက်ထီးကန်)</option>
+                            <option value="Waw">Waw (ဝေါ)</option>
+                            <option value="Wea Laung">Wea Laung (ဝဲလောင်)</option>
+                            <option value="Wetpoat">Wetpoat (ဝက်ပုတ်)</option>
+                            <option value="Wundwin">Wundwin (ဝမ်းတွင်း)</option>
+                            <option value="Yae Myet Ni">Yae Myet Ni (ရေမျက်နီ)</option>
+                            <option value="Yae Nan Ma">Yae Nan Ma (ရေနံမ)</option>
+                            <option value="Yae Ni">Yae Ni (ရေနီ)</option>
+                            <option value="Yamethin">Yamethin (ရမည်းသင်း)</option>
+                            <option value="Yanbye">Yanbye (ရမ်းဗြဲ)</option>
+                            <option value="Yangon">Yangon (ရန်ကုန်)</option>
+                            <option value="Ye">Ye (ရေး)</option>
+                            <option value="YeU">YeU (ရေဦး)</option>
+                            <option value="Yedashe">Yedashe (ရေတာရှည်)</option>
+                            <option value="Yenangyaung">Yenangyaung (ရေနံချောင်း)</option>
+                            <option value="Yesagyo">Yesagyo (ရေစကြို)</option>
+                            <option value="Yin Mar Bin">Yin Mar Bin (ယင်းမာပင)</option>
+                            <option value="Yinnyein">Yinnyein (ရင်းငြိမ်)</option>
+                            <option value="Ywangan">Ywangan (ရွာငံ)</option>
+                            <option value="Ywar Mon">Ywar Mon (ရွာမွန်)</option>
+                            <option value="Ywarthit">Ywarthit (ရွာသစ်)</option>
+                            <option value="Zalun">Zalun (ဇလွန်)</option>
+                            <option value="Zayat Kwin(Mandalay)">Zayat Kwin(Mandalay) (ဇရပ်ကွင်း(မန္တလေး))</option>
+                            <option value="Zeyawaddy">Zeyawaddy (ဇေယျဝတီ)</option>
+                            <option value="Zigon">Zigon (ဇီးကုန်း)</option>
+                            <option value="Zigon(Htantabin)">Zigon(Htantabin) (ဇီးကုန်း(ထန်းတပင်))</option>
+                            <option value="Zin Chaung">Zin Chaung (ဇင်ချောင်း)</option>
+                            <option value="Zin Kyaik">Zin Kyaik (ဇင်းကျိုက်)</option>
+                        </select>
+                    </div>
+
+                    <!-- To (Destination) -->
+                    <div class="col-md-6 col-lg-3">
+                        <label for="selectTo" class="form-label fw-semibold text-secondary small">TO
+                            (DESTINATION)</label>
+                        <select class="form-select rounded-3 py-2" name="destinationId" id="selectTo" required>
+                            <option value="" disabled selected>Select Destination...</option>
+                            <option value="Ahtet Min Hla">
+                                Ahtet Min Hla (အထက်မင်းလှ)
+                            </option>
+
+                            <option value="AungLan">
+                                AungLan (အောင်လံ)
+                            </option>
+
+                            <option value="Aungpan">
+                                Aungpan (အောင်ပန်း)
+                            </option>
+
+                            <option value="Ayadaw">
+                                Ayadaw (အရာတော်)
+                            </option>
+
+                            <option value="Ayetharyar">
+                                Ayetharyar (အေးသာယာ)
+                            </option>
+
+                            <option value="Bagan/Nyaung-U">
+                                Bagan/Nyaung-U (ပုဂံ/ညောင်ဦး)
+                            </option>
+
+                            <option value="Bago">
+                                Bago (ပဲခူး)
+                            </option>
+
+                            <option value="Bahin">
+                                Bahin (ဗဟင်း)
+                            </option>
+
+                            <option value="Banmauk">
+                                Banmauk (ဗန်းမောက်)
+                            </option>
+
+                            <option value="Bhamo">
+                                Bhamo (ဗန်းမော်)
+                            </option>
+
+                            <option value="Bilin">
+                                Bilin (ဘီးလင်း)
+                            </option>
+
+                            <option value="Bilu Island">
+                                Bilu Island (ဘီလူးကျွန်း)
+                            </option>
+
+                            <option value="Bogale">
+                                Bogale (ဘိုကလေး)
+                            </option>
+
+                            <option value="Bokpyin">
+                                Bokpyin (ဘုတ်ပြင်း)
+                            </option>
+
+                            <option value="Budalin">
+                                Budalin (ဘုတလင်)
+                            </option>
+
+                            <option value="Chauk">
+                                Chauk (ချောက်)
+                            </option>
+
+                            <option value="Chaung Kauk">
+                                Chaung Kauk (ချောင်းကောက်)
+                            </option>
+
+                            <option value="Chaung Thar">
+                                Chaung Thar (ချောင်းသာ)
+                            </option>
+
+                            <option value="ChaungU">
+                                ChaungU (ချောင်းဦး)
+                            </option>
+
+                            <option value="Chaungzon">
+                                Chaungzon (ချောင်းဆုံ)
+                            </option>
+
+                            <option value="Dagonayar(Yangon)">
+                                Dagonayar(Yangon) (ဒဂုံဧရာ(ရန်ကုန်))
+                            </option>
+
+                            <option value="Daik-U">
+                                Daik-U (ဒိုက်ဦး)
+                            </option>
+
+                            <option value="Danai">
+                                Danai (တနိုင်း)
+                            </option>
+
+                            <option value="Danubyu">
+                                Danubyu (ဓနုဖြူ)
+                            </option>
+
+                            <option value="Dawei">
+                                Dawei (ထားဝယ်)
+                            </option>
+
+                            <option value="Dedaye">
+                                Dedaye (ဒေးဒရဲ)
+                            </option>
+
+                            <option value="Demoso">
+                                Demoso (ဒီမောဆို)
+                            </option>
+
+                            <option value="Gangaw">
+                                Gangaw (ဂန့်ဂေါ)
+                            </option>
+
+                            <option value="Gwa">
+                                Gwa (ဂွ)
+                            </option>
+
+                            <option value="Gyae Gone">
+                                Gyae Gone (ဂွေးကုန်း)
+                            </option>
+
+                            <option value="Gyeiktaw">
+                                Gyeiktaw (ဂျိတ်တော)
+                            </option>
+
+                            <option value="Gyobingauk">
+                                Gyobingauk (ကြို့ပင်ကောက်)
+                            </option>
+
+                            <option value="Hakha">
+                                Hakha (ဟားခါး)
+                            </option>
+
+                            <option value="Ham Myint Mo">
+                                Ham Myint Mo (ဟံမြင့်မိုရ်)
+                            </option>
+
+                            <option value="HeHoe">
+                                HeHoe (ဟဲဟိုး)
+                            </option>
+
+                            <option value="Hinthada">
+                                Hinthada (ဟင်္သာတ)
+                            </option>
+
+                            <option value="Hlegu">
+                                Hlegu (လှည်းကူး)
+                            </option>
+
+                            <option value="Hopin">
+                                Hopin (ဟိုပင်)
+                            </option>
+
+                            <option value="Hopong">
+                                Hopong (ဟိုပုံး)
+                            </option>
+
+                            <option value="Hpa-An">
+                                Hpa-An (ဘားအံ)
+                            </option>
+
+                            <option value="Hpakan">
+                                Hpakan (ဖားကန့်)
+                            </option>
+
+                            <option value="Hpayargyi">
+                                Hpayargyi (ဘုရားကြီး)
+                            </option>
+
+                            <option value="Hseni">
+                                Hseni (သိန္နီ)
+                            </option>
+
+                            <option value="Hsig Khaung">
+                                Hsig Khaung (ဆိုက်ခေါင်)
+                            </option>
+
+                            <option value="Hsihseng">
+                                Hsihseng (ဆီဆိုင်)
+                            </option>
+
+                            <option value="Hsipaw">
+                                Hsipaw (သီပေါ)
+                            </option>
+
+                            <option value="Htonebo">
+                                Htonebo (ထုံးဘို)
+                            </option>
+
+                            <option value="Indaw">
+                                Indaw (အင်းတော်)
+                            </option>
+
+                            <option value="Ingapu">
+                                Ingapu (အင်္ဂပူ)
+                            </option>
+
+                            <option value="Inn Ta Kaw">
+                                Inn Ta Kaw (အင်းတကော်)
+                            </option>
+
+                            <option value="InnMa">
+                                InnMa (အင်းမ)
+                            </option>
+
+                            <option value="Ka Tun">
+                                Ka Tun (ကတွန်)
+                            </option>
+
+                            <option value="Kalaw">
+                                Kalaw (ကလော)
+                            </option>
+
+                            <option value="Kale">
+                                Kale (ကလေး)
+                            </option>
+
+                            <option value="Kalewa">
+                                Kalewa (ကလေး၀)
+                            </option>
+
+                            <option value="Kamma">
+                                Kamma (ကမ္မ)
+                            </option>
+
+                            <option value="Kanbalu">
+                                Kanbalu (ကန့်ဘလူ)
+                            </option>
+
+                            <option value="Kanbya">
+                                Kanbya (ကန်ပြား)
+                            </option>
+
+                            <option value="Kanpetlet">
+                                Kanpetlet (ကန်ပက်လက်)
+                            </option>
+
+                            <option value="Kar Li">
+                                Kar Li (ကာလိ)
+                            </option>
+
+                            <option value="Katha">
+                                Katha (ကသာ)
+                            </option>
+
+                            <option value="Kawkareik">
+                                Kawkareik (ကော့ကရိတ်)
+                            </option>
+
+                            <option value="Kawthaung">
+                                Kawthaung (ကော့သောင်း)
+                            </option>
+
+                            <option value="Kaytumadi">
+                                Kaytumadi (ကေတုမတီ)
+                            </option>
+
+                            <option value="Keng Tung">
+                                Keng Tung (ကျိုင်းတုံ)
+                            </option>
+
+                            <option value="Khin-U">
+                                Khin-U (ခင်ဦး)
+                            </option>
+
+                            <option value="Kho Lam">
+                                Kho Lam (ခိုလမ်)
+                            </option>
+
+                            <option value="Koebin">
+                                Koebin (ကိုးပင်)
+                            </option>
+
+                            <option value="Kon Zaung">
+                                Kon Zaung (ကုန်းဇောင်း)
+                            </option>
+
+                            <option value="Kume">
+                                Kume (ကူမဲ)
+                            </option>
+
+                            <option value="Kunhing">
+                                Kunhing (ကွန်ဟိန်း)
+                            </option>
+
+                            <option value="Kutkai">
+                                Kutkai (ကွတ်ခိုင်)
+                            </option>
+
+                            <option value="Kwin Hla">
+                                Kwin Hla (ကွင်းလှ)
+                            </option>
+
+                            <option value="Kyaikkami">
+                                Kyaikkami (ကျိုက်ခမီ)
+                            </option>
+
+                            <option value="Kyaikkaw">
+                                Kyaikkaw (ကျိုက်ကော်)
+                            </option>
+
+                            <option value="Kyaiklat">
+                                Kyaiklat (ကျိုက်လတ်)
+                            </option>
+
+                            <option value="Kyaiktiyo">
+                                Kyaiktiyo (ကျိုက်ထီးရိုး)
+                            </option>
+
+                            <option value="Kyaikto">
+                                Kyaikto (ကျိုက်ထို)
+                            </option>
+
+                            <option value="Kyainseikgyi">
+                                Kyainseikgyi (ကြာအင်းဆိပ်ကြီး)
+                            </option>
+
+                            <option value="Kyangin">
+                                Kyangin (ကြံခင်း)
+                            </option>
+
+                            <option value="Kyar Kan">
+                                Kyar Kan (ကြာကန်)
+                            </option>
+
+                            <option value="Kyauk Gyi">
+                                Kyauk Gyi (ကျောက်ကြီး)
+                            </option>
+
+                            <option value="Kyaukme">
+                                Kyaukme (ကျောက်မဲ)
+                            </option>
+
+                            <option value="Kyaukpadaung">
+                                Kyaukpadaung (ကျောက်ပန်းတောင်း)
+                            </option>
+
+                            <option value="Kyaukse">
+                                Kyaukse (ကျောက်ဆည်)
+                            </option>
+
+                            <option value="Kyauktaga">
+                                Kyauktaga (ကျောက်တံခါး)
+                            </option>
+
+                            <option value="Kyauktaw">
+                                Kyauktaw (ကျောက်တော်)
+                            </option>
+
+                            <option value="Kyaung Taw Yar">
+                                Kyaung Taw Yar (ကျောင်းတော်ရာ)
+                            </option>
+
+                            <option value="Kyaw">
+                                Kyaw (ကျော)
+                            </option>
+
+                            <option value="Kyeintali">
+                                Kyeintali (ကျိန္တလီ)
+                            </option>
+
+                            <option value="Kyun Hla">
+                                Kyun Hla (ကျွန်းလှ)
+                            </option>
+
+                            <option value="Kyunchaung">
+                                Kyunchaung (ကျွန်းချောင်း)
+                            </option>
+
+                            <option value="Lashio">
+                                Lashio (လားရှိုး)
+                            </option>
+
+                            <option value="Lat Yin Ma">
+                                Lat Yin Ma (လက်ယက်မ)
+                            </option>
+
+                            <option value="Laukkaing">
+                                Laukkaing (လောက်ကိုင်)
+                            </option>
+
+                            <option value="Lawksawk">
+                                Lawksawk (ရပ်စောက်)
+                            </option>
+
+                            <option value="Lay Taung">
+                                Lay Taung (လေးတောင်)
+                            </option>
+
+                            <option value="Lay Tine Sin">
+                                Lay Tine Sin (လေးတိုင်စင်)
+                            </option>
+
+                            <option value="Lelu">
+                                Lelu (လဲလူ)
+                            </option>
+
+                            <option value="Letpadan">
+                                Letpadan (လက်ပံတန်း)
+                            </option>
+
+                            <option value="Letpanhla">
+                                Letpanhla (လက်ပန်လှ)
+                            </option>
+
+                            <option value="Lewe">
+                                Lewe (လယ်ဝေး)
+                            </option>
+
+                            <option value="Loikaw">
+                                Loikaw (လွိုင်ကော်)
+                            </option>
+
+                            <option value="Loilem">
+                                Loilem (လွိုင်လင်)
+                            </option>
+
+                            <option value="Lonkin">
+                                Lonkin (လုံးခင်း)
+                            </option>
+
+                            <option value="Ma-ei">
+                                Ma-ei (မအီ)
+                            </option>
+
+                            <option value="Mabein">
+                                Mabein (မဘိမ်း)
+                            </option>
+
+                            <option value="Madaya">
+                                Madaya (မတ္တရာ)
+                            </option>
+
+                            <option value="Magway">
+                                Magway (မကွေး)
+                            </option>
+
+                            <option value="Mahar Myaing">
+                                Mahar Myaing (မဟာမြိုင်)
+                            </option>
+
+                            <option value="Mahlaing">
+                                Mahlaing (မလှိုင်)
+                            </option>
+
+                            <option value="Malun">
+                                Malun (မလွန်)
+                            </option>
+
+                            <option value="Mandalay">
+                                Mandalay (မန္တလေး)
+                            </option>
+
+                            <option value="Maubin">
+                                Maubin (မအူပင်)
+                            </option>
+
+                            <option value="Maw Hun">
+                                Maw Hun (မော်ဟန်)
+                            </option>
+
+                            <option value="Maw Luu">
+                                Maw Luu (မော်လူး)
+                            </option>
+
+                            <option value="Mawlamyine">
+                                Mawlamyine (မော်လမြိုင်)
+                            </option>
+
+                            <option value="Me Za Li Kone">
+                                Me Za Li Kone (မဲဇလီကုန်း)
+                            </option>
+
+                            <option value="Mee The">
+                                Mee The (မဲသည်)
+                            </option>
+
+                            <option value="Meiktila">
+                                Meiktila (မိတ္ထီလာ)
+                            </option>
+
+                            <option value="Migyaungye">
+                                Migyaungye (မိချောင်းရဲ)
+                            </option>
+
+                            <option value="MinBya">
+                                MinBya (မင်းပြား)
+                            </option>
+
+                            <option value="Minbu">
+                                Minbu (မင်းဘူး)
+                            </option>
+
+                            <option value="Moebyel">
+                                Moebyel (မိုးဗြဲ)
+                            </option>
+
+                            <option value="Mogaung">
+                                Mogaung (မိုးကောင်း)
+                            </option>
+
+                            <option value="Mogok">
+                                Mogok (မိုးကုတ်)
+                            </option>
+
+                            <option value="Mohnyin">
+                                Mohnyin (မိုးညှင်း)
+                            </option>
+
+                            <option value="Moke Pa Lin">
+                                Moke Pa Lin (မုပ္ပလင်)
+                            </option>
+
+                            <option value="Moke Ta Ma">
+                                Moke Ta Ma (မုတ္တမ)
+                            </option>
+
+                            <option value="Mong Hsat">
+                                Mong Hsat (မိုင်းဆတ်)
+                            </option>
+
+                            <option value="Mong Hsu">
+                                Mong Hsu (မိုင်းရှုး)
+                            </option>
+
+                            <option value="Mong Khat">
+                                Mong Khat (မိုင်းခတ်)
+                            </option>
+
+                            <option value="Mong Pawn">
+                                Mong Pawn (မိုင်းပွန်)
+                            </option>
+
+                            <option value="Mong Ton">
+                                Mong Ton (မိုင်းတုံ)
+                            </option>
+
+                            <option value="Mong Yang">
+                                Mong Yang (မိုင်းယန်း)
+                            </option>
+
+                            <option value="Monghpyak">
+                                Monghpyak (မိုင်းဖြတ်)
+                            </option>
+
+                            <option value="Mongla">
+                                Mongla (မိုင်းလား)
+                            </option>
+
+                            <option value="Mongmit">
+                                Mongmit (မိုးမိတ်)
+                            </option>
+
+                            <option value="Mongping">
+                                Mongping (မိုင်းပျဉ်း)
+                            </option>
+
+                            <option value="Mongyai">
+                                Mongyai (မိုင်းရယ်)
+                            </option>
+
+                            <option value="Mongyawng">
+                                Mongyawng (မိုင်းယောင်း)
+                            </option>
+
+                            <option value="Mongyu">
+                                Mongyu (မိုင်းယု)
+                            </option>
+
+                            <option value="Monywa">
+                                Monywa (မုံရွာ)
+                            </option>
+
+                            <option value="Mudon">
+                                Mudon (မုဒုံ)
+                            </option>
+
+                            <option value="Mukangyi">
+                                Mukangyi (မူကမ်းကြီး)
+                            </option>
+
+                            <option value="Muse">
+                                Muse (မူဆယ်)
+                            </option>
+
+                            <option value="Mya Taung">
+                                Mya Taung (မြတောင်)
+                            </option>
+
+                            <option value="Myaing">
+                                Myaing (မြိုင်)
+                            </option>
+
+                            <option value="Myanaung">
+                                Myanaung (မြန်အောင်)
+                            </option>
+
+                            <option value="Myaungmya">
+                                Myaungmya (မြောင်းမြ)
+                            </option>
+
+                            <option value="Myawaddy">
+                                Myawaddy (မြဝတီ)
+                            </option>
+
+                            <option value="Myeik">
+                                Myeik (မြိတ်)
+                            </option>
+
+                            <option value="Myingyan">
+                                Myingyan (မြင်းခြံ)
+                            </option>
+
+                            <option value="Myinmu">
+                                Myinmu (မြင်းမူ)
+                            </option>
+
+                            <option value="Myitchay">
+                                Myitchay (မြစ်ခြေ)
+                            </option>
+
+                            <option value="Myitkyina">
+                                Myitkyina (မြစ်ကြီးနား)
+                            </option>
+
+                            <option value="Myitnge">
+                                Myitnge (မြစ်ငယ်)
+                            </option>
+
+                            <option value="Myittha">
+                                Myittha (မြစ်သား)
+                            </option>
+
+                            <option value="Myo Hla">
+                                Myo Hla (မြို့လှ)
+                            </option>
+
+                            <option value="Myogyi">
+                                Myogyi (မြို့ကြီး)
+                            </option>
+
+                            <option value="Myothit">
+                                Myothit (မြို့သစ်)
+                            </option>
+
+                            <option value="Namhkan">
+                                Namhkan (နမ့်ခမ်း)
+                            </option>
+
+                            <option value="Namhkok">
+                                Namhkok (နမ့်ခုတ်)
+                            </option>
+
+                            <option value="Namsang">
+                                Namsang (နမ့်စန်)
+                            </option>
+
+                            <option value="Namsi Awng">
+                                Namsi Awng (နန့်စီးအောင်)
+                            </option>
+
+                            <option value="Nan Mar">
+                                Nan Mar (နမ်မား)
+                            </option>
+
+                            <option value="Nanmati">
+                                Nanmati (နမ္မတီး)
+                            </option>
+
+                            <option value="Nar Kaung Mu">
+                                Nar Kaung Mu (နားကောင်းမူ့)
+                            </option>
+
+                            <option value="Natmauk">
+                                Natmauk (နတ်မောက်)
+                            </option>
+
+                            <option value="Natogyi">
+                                Natogyi (နွားထိုးကြီး)
+                            </option>
+
+                            <option value="Nattalin">
+                                Nattalin (နတ္တလင်း)
+                            </option>
+
+                            <option value="Naungtayar">
+                                Naungtayar (နောင်တရား)
+                            </option>
+
+                            <option value="Nawnghkio">
+                                Nawnghkio (နောင်ချို)
+                            </option>
+
+                            <option value="Naypyitaw (Bawga)">
+                                Naypyitaw (Bawga) (နေပြည်တော် (ဘောဂ))
+                            </option>
+
+                            <option value="Naypyitaw (Myoma)">
+                                Naypyitaw (Myoma) (နေပြည်တော် (မြို့မ))
+                            </option>
+
+                            <option value="Naypyitaw (Thapyaygone)">
+                                Naypyitaw (Thapyaygone) (နေပြည်တော် (သပြေကုန်း))
+                            </option>
+
+                            <option value="Ngape">
+                                Ngape (ငဖဲ)
+                            </option>
+
+                            <option value="Ngar O">
+                                Ngar O (ငါးအိုး)
+                            </option>
+
+                            <option value="Ngathayauk">
+                                Ngathayauk (ငါ့သရောက်)
+                            </option>
+
+                            <option value="Ngwe Saung">
+                                Ngwe Saung (ငွေဆောင်)
+                            </option>
+
+                            <option value="Nyaung Chay Htauk">
+                                Nyaung Chay Htauk (ညောင်ခြေထောက်)
+                            </option>
+
+                            <option value="Nyaung Khar Shey">
+                                Nyaung Khar Shey (ညောင်ခါးရှည်)
+                            </option>
+
+                            <option value="Nyaung Kone">
+                                Nyaung Kone (ညောင်ကုန်း)
+                            </option>
+
+                            <option value="Nyaung Lay Pin">
+                                Nyaung Lay Pin (ညောင်လေးပင်)
+                            </option>
+
+                            <option value="Nyaung Pin Thar">
+                                Nyaung Pin Thar (ညောင်ပင်သာ)
+                            </option>
+
+                            <option value="Nyaung Shwe(Inle)">
+                                Nyaung Shwe(Inle) (ညောင်ရွှေ(အင်းလေး))
+                            </option>
+
+                            <option value="NyaungPin">
+                                NyaungPin (ညောင်ပင်)
+                            </option>
+
+                            <option value="Nyaungdon">
+                                Nyaungdon (ညောင်တုန်း)
+                            </option>
+
+                            <option value="Oak Pho">
+                                Oak Pho (အုတ်ဖို)
+                            </option>
+
+                            <option value="Oke Shit Pin">
+                                Oke Shit Pin (ဥသျှစ်ပင်)
+                            </option>
+
+                            <option value="Oktwin">
+                                Oktwin (အုတ်တွင်း)
+                            </option>
+
+                            <option value="Padaung">
+                                Padaung (ပန်းတောင်း)
+                            </option>
+
+                            <option value="Padein">
+                                Padein (ပဒါန်း)
+                            </option>
+
+                            <option value="Padigon">
+                                Padigon (ပုတီးကုန်း)
+                            </option>
+
+                            <option value="Pakokku">
+                                Pakokku (ပခုက္ကူ)
+                            </option>
+
+                            <option value="Pala">
+                                Pala (ပလ)
+                            </option>
+
+                            <option value="Palauk">
+                                Palauk (ပလောက်)
+                            </option>
+
+                            <option value="Palaw">
+                                Palaw (ပုလော)
+                            </option>
+
+                            <option value="Pale">
+                                Pale (ပုလဲ)
+                            </option>
+
+                            <option value="Pathein">
+                                Pathein (ပုသိမ်)
+                            </option>
+
+                            <option value="Pauk">
+                                Pauk (ပေါက်)
+                            </option>
+
+                            <option value="Paukkhaung">
+                                Paukkhaung (ပေါက်ခေါင်း)
+                            </option>
+
+                            <option value="Pauktaw">
+                                Pauktaw (ပေါက်တော)
+                            </option>
+
+                            <option value="Paung">
+                                Paung (ပေါင်)
+                            </option>
+
+                            <option value="Paungdale">
+                                Paungdale (ပေါင်းတလည်)
+                            </option>
+
+                            <option value="Paungde">
+                                Paungde (ပေါင်းတည်)
+                            </option>
+
+                            <option value="Payangazu">
+                                Payangazu (ဘုရားငါးဆူ)
+                            </option>
+
+                            <option value="Pekon">
+                                Pekon (ဖယ်ခုံ)
+                            </option>
+
+                            <option value="Penwegon">
+                                Penwegon (ပဲနွယ်ကုန်း)
+                            </option>
+
+                            <option value="Petye">
+                                Petye (ဘက်ရဲ)
+                            </option>
+
+                            <option value="Phyu">
+                                Phyu (ဖြူး)
+                            </option>
+
+                            <option value="Pindaya">
+                                Pindaya (ပင်းတယ)
+                            </option>
+
+                            <option value="Pinlaung">
+                                Pinlaung (ပင်လောင်း)
+                            </option>
+
+                            <option value="Pinlon">
+                                Pinlon (ပင်လုံ)
+                            </option>
+
+                            <option value="Pinphyit">
+                                Pinphyit (ပင်ပြစ်)
+                            </option>
+
+                            <option value="Poneparkyin">
+                                Poneparkyin (ပုံပါကျင်)
+                            </option>
+
+                            <option value="Ponnagyun">
+                                Ponnagyun (ပုဏ္ဏားကျွန်း)
+                            </option>
+
+                            <option value="Popa">
+                                Popa (ပုပ္ပါး)
+                            </option>
+
+                            <option value="Pwintbyu">
+                                Pwintbyu (ပွင့်ဖြူ)
+                            </option>
+
+                            <option value="Pyapon">
+                                Pyapon (ဖျာပုံ)
+                            </option>
+
+                            <option value="Pyawbwe">
+                                Pyawbwe (ပျော်ဘွယ်)
+                            </option>
+
+                            <option value="Pyay">
+                                Pyay (ပြည်)
+                            </option>
+
+                            <option value="Pyin Oo Lwin">
+                                Pyin Oo Lwin (ပြင်ဦးလွင်)
+                            </option>
+
+                            <option value="Pyinbongyi">
+                                Pyinbongyi (ပျဉ်ပုံကြီး)
+                            </option>
+
+                            <option value="Pyinsi">
+                                Pyinsi (ပြင်စီ)
+                            </option>
+
+                            <option value="Pyuntasa">
+                                Pyuntasa (ပြွန်တန်ဆာ)
+                            </option>
+
+                            <option value="Sa Lay">
+                                Sa Lay (စလေ)
+                            </option>
+
+                            <option value="Sadaung">
+                                Sadaung (ဆားတောင်)
+                            </option>
+
+                            <option value="Sagaing">
+                                Sagaing (စစ်ကိုင်း)
+                            </option>
+
+                            <option value="Sahmaw">
+                                Sahmaw (ဆားမှော်)
+                            </option>
+
+                            <option value="Saing Pyin">
+                                Saing Pyin (စိုင်ပြင်)
+                            </option>
+
+                            <option value="Salin">
+                                Salin (စလင်း)
+                            </option>
+
+                            <option value="Sane">
+                                Sane (စနဲ)
+                            </option>
+
+                            <option value="Satthwa">
+                                Satthwa (ဆပ်သွား)
+                            </option>
+
+                            <option value="Sea and Lake Resort">
+                                Sea and Lake Resort (Sea and Lake Resort)
+                            </option>
+
+                            <option value="Seikphyu">
+                                Seikphyu (ဆိပ်ဖြူ)
+                            </option>
+
+                            <option value="Shauktaw">
+                                Shauktaw (ရှောက်တော)
+                            </option>
+
+                            <option value="Shwe Ku">
+                                Shwe Ku (ရွှေကူ)
+                            </option>
+
+                            <option value="Shwe Nyaung">
+                                Shwe Nyaung (ရွှေညောင်)
+                            </option>
+
+                            <option value="Shwe Set Taw">
+                                Shwe Set Taw (ရွှေစက်တော်)
+                            </option>
+
+                            <option value="Shwebo">
+                                Shwebo (ရွှေဘို)
+                            </option>
+
+                            <option value="Shweda">
+                                Shweda (ရွှေဒါး)
+                            </option>
+
+                            <option value="Shwedaung">
+                                Shwedaung (ရွှေတောင်)
+                            </option>
+
+                            <option value="Shwehlae">
+                                Shwehlae (ရွှေလှေ)
+                            </option>
+
+                            <option value="Shwethaungyan">
+                                Shwethaungyan (ရွေသောင်ယံ)
+                            </option>
+
+                            <option value="Si Sone Gone">
+                                Si Sone Gone (ဆီဆုံကုန်း)
+                            </option>
+
+                            <option value="Sin Hpyu Kyun">
+                                Sin Hpyu Kyun (ဆင်ဖြူကျွန်း)
+                            </option>
+
+                            <option value="Sinbaungwe">
+                                Sinbaungwe (ဆင်ပေါင်ဝဲ)
+                            </option>
+
+                            <option value="Sinde">
+                                Sinde (ဆင်တဲ)
+                            </option>
+
+                            <option value="Sintgaing">
+                                Sintgaing (စဉ့်ကိုင်)
+                            </option>
+
+                            <option value="Swar">
+                                Swar (ဆွာ)
+                            </option>
+
+                            <option value="Tabayin">
+                                Tabayin (ဒီပဲယင်း)
+                            </option>
+
+                            <option value="Tachileik">
+                                Tachileik (တာချီလိတ်)
+                            </option>
+
+                            <option value="Tamu">
+                                Tamu (တမူး)
+                            </option>
+
+                            <option value="Tangyan">
+                                Tangyan (တန့်ယန်း)
+                            </option>
+
+                            <option value="Tanintharyi">
+                                Tanintharyi (တနင်္သာရီ)
+                            </option>
+
+                            <option value="Tarlay">
+                                Tarlay (တာလေ)
+                            </option>
+
+                            <option value="Tat Taung">
+                                Tat Taung (တပ်တောင်)
+                            </option>
+
+                            <option value="Tatkon">
+                                Tatkon (တပ်ကုန်း)
+                            </option>
+
+                            <option value="Taungdwingyi">
+                                Taungdwingyi (တောင်တွင်းကြီး)
+                            </option>
+
+                            <option value="Taunggyi">
+                                Taunggyi (တောင်ကြီး)
+                            </option>
+
+                            <option value="Taungni">
+                                Taungni (တောင်နီ)
+                            </option>
+
+                            <option value="Taungoo">
+                                Taungoo (တောင်ငူ)
+                            </option>
+
+                            <option value="Taungtha">
+                                Taungtha (တောင်သာ)
+                            </option>
+
+                            <option value="Taw Kyel Inn">
+                                Taw Kyel Inn (တောကျွဲအင်း)
+                            </option>
+
+                            <option value="Taze">
+                                Taze (တန့်ဆည်)
+                            </option>
+
+                            <option value="Tha Bye Kon">
+                                Tha Bye Kon (သပြေကုန်း)
+                            </option>
+
+                            <option value="Tha Phay Wa">
+                                Tha Phay Wa (သပြေဝ)
+                            </option>
+
+                            <option value="Thabeikkyin">
+                                Thabeikkyin (သပိတ်ကျဉ်း)
+                            </option>
+
+                            <option value="Thanbyuzayat">
+                                Thanbyuzayat (သံဖြူဇရပ်)
+                            </option>
+
+                            <option value="Thar Ga Ya">
+                                Thar Ga Ya (သာဂရ)
+                            </option>
+
+                            <option value="Thar Ma Nya">
+                                Thar Ma Nya (သာမည)
+                            </option>
+
+                            <option value="Thar Wut Hti">
+                                Thar Wut Hti (သာဝတ္ထိ)
+                            </option>
+
+                            <option value="Thaton">
+                                Thaton (သထုံ)
+                            </option>
+
+                            <option value="Thazi">
+                                Thazi (သာစည်)
+                            </option>
+
+                            <option value="Thegon">
+                                Thegon (သဲကုန်း)
+                            </option>
+
+                            <option value="Thit Yar Kaut">
+                                Thit Yar Kaut (သစ်ရာကောက်)
+                            </option>
+
+                            <option value="Ti Kyit">
+                                Ti Kyit (တီကျစ်)
+                            </option>
+
+                            <option value="Tigyaing">
+                                Tigyaing (ထီးချိုင့်)
+                            </option>
+
+                            <option value="Tilin">
+                                Tilin (ထီးလင်း)
+                            </option>
+
+                            <option value="Wathtikan">
+                                Wathtikan (ဝက်ထီးကန်)
+                            </option>
+
+                            <option value="Waw">
+                                Waw (ဝေါ)
+                            </option>
+
+                            <option value="Wea Laung">
+                                Wea Laung (ဝဲလောင်)
+                            </option>
+
+                            <option value="Wetpoat">
+                                Wetpoat (ဝက်ပုတ်)
+                            </option>
+
+                            <option value="Wundwin">
+                                Wundwin (ဝမ်းတွင်း)
+                            </option>
+
+                            <option value="Yae Myet Ni">
+                                Yae Myet Ni (ရေမျက်နီ)
+                            </option>
+
+                            <option value="Yae Nan Ma">
+                                Yae Nan Ma (ရေနံမ)
+                            </option>
+
+                            <option value="Yae Ni">
+                                Yae Ni (ရေနီ)
+                            </option>
+
+                            <option value="Yamethin">
+                                Yamethin (ရမည်းသင်း)
+                            </option>
+
+                            <option value="Yanbye">
+                                Yanbye (ရမ်းဗြဲ)
+                            </option>
+
+                            <option value="Yangon">
+                                Yangon (ရန်ကုန်)
+                            </option>
+
+                            <option value="Ye">
+                                Ye (ရေး)
+                            </option>
+
+                            <option value="YeU">
+                                YeU (ရေဦး)
+                            </option>
+
+                            <option value="Yedashe">
+                                Yedashe (ရေတာရှည်)
+                            </option>
+
+                            <option value="Yenangyaung">
+                                Yenangyaung (ရေနံချောင်း)
+                            </option>
+
+                            <option value="Yesagyo">
+                                Yesagyo (ရေစကြို)
+                            </option>
+
+                            <option value="Yin Mar Bin">
+                                Yin Mar Bin (ယင်းမာပင)
+                            </option>
+
+                            <option value="Yinnyein">
+                                Yinnyein (ရင်းငြိမ်)
+                            </option>
+
+                            <option value="Ywangan">
+                                Ywangan (ရွာငံ)
+                            </option>
+
+                            <option value="Ywar Mon">
+                                Ywar Mon (ရွာမွန်)
+                            </option>
+
+                            <option value="Ywarthit">
+                                Ywarthit (ရွာသစ်)
+                            </option>
+
+                            <option value="Zalun">
+                                Zalun (ဇလွန်)
+                            </option>
+
+                            <option value="Zayat Kwin(Mandalay)">
+                                Zayat Kwin(Mandalay) (ဇရပ်ကွင်း(မန္တလေး))
+                            </option>
+
+                            <option value="Zeyawaddy">
+                                Zeyawaddy (ဇေယျဝတီ)
+                            </option>
+
+                            <option value="Zigon">
+                                Zigon (ဇီးကုန်း)
+                            </option>
+
+                            <option value="Zigon(Htantabin)">
+                                Zigon(Htantabin) (ဇီးကုန်း(ထန်းတပင်))
+                            </option>
+
+                            <option value="Zin Chaung">
+                                Zin Chaung (ဇင်ချောင်း)
+                            </option>
+
+                            <option value="Zin Kyaik">
+                                Zin Kyaik (ဇင်းကျိုက်)
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Departure Date -->
+                    <div class="col-md-6 col-lg-3">
+                        <label for="departureDate" class="form-label fw-semibold text-secondary small">DEPARTURE
+                            DATE</label>
+                        <input type="date" class="form-control rounded-3 py-2" name="departureDate" id="departureDate"
+                            required />
+                    </div>
+
+                    <!-- Seats -->
+                    <div class="col-md-6 col-lg-3">
+                        <label for="numberOfSeats" class="form-label fw-semibold text-secondary small">SEATS</label>
+                        <input type="number" class="form-control rounded-3 py-2" name="numberOfSeats" id="numberOfSeats"
+                            value="1" min="1" max="10" required />
+                    </div>
+                </div>
+
+                <hr class="my-4 text-muted opacity-25">
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <!-- Traveller Type -->
+                    <div class="d-flex align-items-center gap-4">
+                        <span class="fw-semibold text-secondary small">TRAVELLER TYPE:</span>
+                        <div class="form-check me-2">
+                            <input type="radio" id="myanmar" name="isForeigner" value="false" class="form-check-input"
+                                checked />
+                            <label for="myanmar" class="form-check-label small fw-medium">Local Traveller</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" id="foreigner" name="isForeigner" value="true"
+                                class="form-check-input" />
+                            <label for="foreigner" class="form-check-label small fw-medium">Foreign Traveller</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="searchSubmitBtn"
+                        class="btn btn-dark rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2">
+                        <span id="searchBtnIcon">🔍</span>
+                        <span id="searchBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"
+                            aria-hidden="true"></span>
+                        <span id="searchBtnText">Search Trips</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="resultsWrapper" class="card border-0 shadow-sm d-none rounded-4 overflow-hidden">
+        <div
+            class="card-header bg-white border-bottom py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <h5 class="fw-bold text-dark mb-0">Available Schedules</h5>
+
+            <div class="d-flex align-items-center gap-2" style="max-width: 320px; width: 100%;">
+                <input type="text" id="operatorFilter" class="form-control form-control-sm rounded-pill px-3"
+                    placeholder="⚡ Filter by Operator (e.g. Mandalar Min)..." />
+            </div>
+        </div>
+        <div class="card-body p-4">
+
+            <div id="loadingSpinner" class="text-center py-5">
+                <div class="spinner-border text-dark mb-3" style="width: 2.5rem; height: 2.5rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted fw-medium mb-0">Fetching express route schedules...</p>
+            </div>
+
+            <div id="searchResultsContent" class="overflow-auto" style="max-height: 800px;"></div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchForm = document.getElementById('busSearchForm');
+        const resultsWrapper = document.getElementById('resultsWrapper');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const searchResultsContent = document.getElementById('searchResultsContent');
+        const departureDateInput = document.getElementById('departureDate');
+        const operatorFilter = document.getElementById('operatorFilter');
+        const searchSubmitBtn = document.getElementById('searchSubmitBtn');
+        const searchBtnIcon = document.getElementById('searchBtnIcon');
+        const searchBtnSpinner = document.getElementById('searchBtnSpinner');
+        const searchBtnText = document.getElementById('searchBtnText');
+
+        let currentTripsData = [];
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        departureDateInput.min = todayStr;
+        departureDateInput.value = todayStr;
+
+        function renderTrips(trips) {
+            if (!trips || trips.length === 0) {
+                searchResultsContent.innerHTML = `
+                    <div class="alert alert-warning text-center rounded-3 my-4">
+                        No operators match your filter or search criteria.
+                    </div>`;
+                return;
+            }
+
+            let html = `<div class="d-flex flex-column gap-3">`;
+
+            trips.forEach(trip => {
+                const logoHtml = trip.operator_logo
+                    ? `<img src="${trip.operator_logo}" alt="${trip.operator_name}" class="img-fluid rounded mb-1" style="max-height: 40px; object-fit: contain;">`
+                    : `<div class="fw-bold text-primary fs-5">${trip.operator_name}</div>`;
+
+                const featuresList = (trip.features && trip.features.length) ? trip.features : [];
+                const featuresHtml = featuresList.length > 0
+                    ? featuresList.map(f => `<span class="badge bg-success-subtle text-success border border-success-subtle me-1 mb-1 fw-medium"><i class="bi bi-check me-1"></i>${f}</span>`).join('')
+                    : `<span class="badge bg-light text-secondary border me-1 mb-1">Express Bus</span>`;
+
+                const routePathHtml = trip.route_path
+                    ? `<div class="small text-muted mt-2">
+                         <i class="bi bi-signpost-split-fill text-primary me-1"></i><strong>Path:</strong> ${trip.route_path}
+                       </div>`
+                    : '';
+
+                const reqsList = (trip.requirements && trip.requirements.length) ? trip.requirements : [];
+                const requirementsHtml = reqsList.length > 0
+                    ? `<div class="p-2 bg-light rounded-3 small text-secondary border-start border-3 border-warning mt-3">
+                         <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i><strong>Requirements:</strong> ${reqsList.join(' • ')}
+                       </div>`
+                    : '';
+
+                html += `
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden hover-shadow transition">
+                        <div class="card-body p-4">
+                            <div class="row align-items-center g-3">
+                                
+                                <!-- Column 1: Operator Logo & Class -->
+                                <div class="col-12 col-md-4 border-end-md">
+                                    <div class="mb-1">${logoHtml}</div>
+                                    <div class="small fw-semibold text-dark operator-title">${trip.operator_name}</div>
+                                    <span class="badge bg-primary-subtle text-primary mt-1 fw-normal">${trip.bus_class || 'Standard'}</span>
+                                </div>
+
+                                <!-- Column 2: Route, Timing & Duration -->
+                                <div class="col-12 col-md-5">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div>
+                                            <div class="fs-4 fw-bold text-dark">${trip.departure_time}</div>
+                                            <div class="small text-muted">${trip.boarding_point}</div>
+                                        </div>
+                                        <div class="text-center px-2">
+                                            <i class="bi bi-arrow-right text-muted fs-5"></i>
+                                            <div class="small text-muted" style="font-size: 0.75rem;">${trip.duration}</div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="fs-6 fw-semibold text-secondary">Arrival</div>
+                                            <div class="small text-muted">${trip.dropping_point}</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Features & Route Path -->
+                                    <div class="mt-2">
+                                        ${featuresHtml}
+                                        ${routePathHtml}
+                                    </div>
+                                </div>
+
+                                <!-- Column 3: Price (Smaller & Dark/Gray) -->
+                                <div class="col-12 col-md-3 text-md-end border-start-md ps-md-4">
+                                    <div class="small text-muted mb-1">Fee per seat</div>
+                                    <div class="fs-5 fw-bold text-dark mb-0">${trip.price}</div>
+                                </div>
+
+                            </div>
+
+                            <!-- Requirements Banner -->
+                            ${requirementsHtml}
+
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            searchResultsContent.innerHTML = html;
+        }
+
+        operatorFilter.addEventListener('input', function (e) {
+            const query = e.target.value.toLowerCase().trim();
+            if (!query) {
+                renderTrips(currentTripsData);
+                return;
+            }
+            const filtered = currentTripsData.filter(trip =>
+                trip.operator_name.toLowerCase().includes(query)
+            );
+            renderTrips(filtered);
+        });
+
+        searchForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(searchForm);
+            const searchParams = new URLSearchParams(formData).toString();
+
+            operatorFilter.value = '';
+
+            searchSubmitBtn.disabled = true;
+            searchBtnIcon.classList.add('d-none');
+            searchBtnSpinner.classList.remove('d-none');
+            searchBtnText.textContent = 'Searching...';
+
+            resultsWrapper.classList.remove('d-none');
+            loadingSpinner.classList.remove('d-none');
+            searchResultsContent.innerHTML = '';
+
+            fetch(`/api/bus-search?${searchParams}`)
+                .then(res => res.json())
+                .then(data => {
+                    loadingSpinner.classList.add('d-none');
+
+                    if (!data.success || !data.trips || data.trips.length === 0) {
+                        searchResultsContent.innerHTML = `
+                        <div class="alert alert-warning text-center rounded-3 my-4">
+                            ${data.error || 'No bus trips available for this route or date.'}
+                        </div>`;
+                        currentTripsData = [];
+                        return;
+                    }
+
+                    currentTripsData = data.trips;
+                    renderTrips(currentTripsData);
+                })
+                .catch(err => {
+                    loadingSpinner.classList.add('d-none');
+                    searchResultsContent.innerHTML = `<div class="alert alert-danger text-center">Failed to fetch route response. Check API endpoint logs.</div>`;
+                })
+                .finally(() => {
+                    searchSubmitBtn.disabled = false;
+                    searchBtnIcon.classList.remove('d-none');
+                    searchBtnSpinner.classList.add('d-none');
+                    searchBtnText.textContent = 'Search Trips';
+                });
+        });
+    });
+</script>
+{% endblock %}

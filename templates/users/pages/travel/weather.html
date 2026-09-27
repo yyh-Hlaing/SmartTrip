@@ -1,0 +1,150 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Weather Forecast{% endblock %}
+
+{% block content %}
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h2 class="fw-bold text-dark">🌤️ Weather Forecast & Predictions</h2>
+        <p class="text-muted">Real-time local conditions, multi-day forecasts, and regional weather updates across Myanmar.</p>
+    </div>
+
+    <div class="card card-custom border-0 shadow-sm mb-5">
+        <div class="card-body p-4 p-md-5">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-5 border-end-lg">
+                    <span class="badge bg-warning bg-opacity-25 text-dark fw-semibold px-3 py-1 rounded-pill mb-3">Your Current Location</span>
+                    <h3 class="fw-bold text-dark mb-1" id="current-temp-display">Loading current weather...</h3>
+                    <p class="text-muted mb-3" id="current-cond-display">Fetching conditions for coordinates (Lat: {{ user.latitude }}, Lon: {{ user.longitude }})</p>
+                    <div class="d-flex gap-3 text-secondary small fw-medium">
+                        <span id="current-wind">💨 Wind: --</span>
+                        <span id="current-humidity">💧 Humidity: --</span>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <h5 class="fw-bold text-dark mb-3">📅 7-Day Local Weather Prediction</h5>
+                    <div class="row g-2" id="local-forecast-container">
+                        <div class="col-12 text-muted small">Loading prediction data...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <h4 class="fw-bold text-dark mb-1">🇲🇲 Myanmar Regional Weather Predictions</h4>
+        <p class="text-muted small">Current conditions and forecasts across 14 major cities and regions in Myanmar.</p>
+    </div>
+
+    <div class="row g-4 mb-5" id="myanmar-cities-grid">
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // User Coordinates from Flask session
+        const userLat = {{ user.latitude if user.latitude is not none else 16.7954 }};
+        const userLon = {{ user.longitude if user.longitude is not none else 96.1610 }};
+
+        // 1. Fetch User Current & 7-Day Forecast
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${userLat}&longitude=${userLon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.current_weather) {
+                    document.getElementById('current-temp-display').innerText = `${data.current_weather.temperature}°C`;
+                    document.getElementById('current-wind').innerText = `💨 Wind: ${data.current_weather.windspeed} km/h`;
+                    document.getElementById('current-humidity').innerText = `💧 Local Time: ${data.current_weather.time.replace('T', ' ')}`;
+                    document.getElementById('current-cond-display').innerText = `Live forecast matching your coordinates.`;
+                }
+
+                if (data && data.daily) {
+                    let forecastHtml = '';
+                    for (let i = 0; i < 7; i++) {
+                        let date = data.daily.time[i];
+                        let maxT = data.daily.temperature_2m_max[i];
+                        let minT = data.daily.temperature_2m_min[i];
+                        forecastHtml += `
+                            <div class="col-6 col-md-4 col-lg">
+                                <div class="p-2 border rounded-3 bg-light text-center h-100">
+                                    <small class="text-muted d-block fw-bold">${date.slice(5)}</small>
+                                    <span class="fw-bold text-dark">${maxT}° / ${minT}°</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    document.getElementById('local-forecast-container').innerHTML = forecastHtml;
+                }
+            })
+            .catch(err => {
+                document.getElementById('current-temp-display').innerText = "Unavailable";
+            });
+
+        const myanmarCities = [
+            { name: "Yangon", region: "Yangon Region", lat: 16.8661, lon: 96.1951 },
+            { name: "Mandalay", region: "Mandalay Region", lat: 21.9588, lon: 96.0891 },
+            { name: "Naypyidaw", region: "Union Territory", lat: 19.7633, lon: 96.0785 },
+            { name: "Bagan", region: "Mandalay Region", lat: 21.1717, lon: 94.8587 },
+            { name: "Taunggyi", region: "Shan State", lat: 20.7892, lon: 97.0372 },
+            { name: "Inle Lake", region: "Shan State", lat: 20.5721, lon: 96.9088 },
+            { name: "Mawlamyine", region: "Mon State", lat: 16.4919, lon: 97.6256 },
+            { name: "Bago", region: "Bago Region", lat: 17.3249, lon: 96.4773 },
+            { name: "Pathein", region: "Ayeyarwady Region", lat: 16.7794, lon: 94.7323 },
+            { name: "Sittwe", region: "Rakhine State", lat: 20.1472, lon: 92.9036 },
+            { name: "Myitkyina", region: "Kachin State", lat: 25.3833, lon: 97.4000 },
+            { name: "Dawei", region: "Tanintharyi Region", lat: 14.0833, lon: 98.2000 },
+            { name: "Hpa-An", region: "Kayin State", lat: 16.8902, lon: 97.6353 },
+            { name: "Loikaw", region: "Kayah State", lat: 19.6743, lon: 97.2104 }
+        ];
+
+        const citiesGrid = document.getElementById('myanmar-cities-grid');
+        citiesGrid.innerHTML = '';
+
+        myanmarCities.forEach(city => {
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true`)
+                .then(res => res.json())
+                .then(weatherData => {
+                    const temp = weatherData && weatherData.current_weather ? weatherData.current_weather.temperature + "°C" : "N/A";
+                    const wind = weatherData && weatherData.current_weather ? weatherData.current_weather.windspeed + " km/h" : "N/A";
+
+                    const card = `
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card card-custom border-0 shadow-sm h-100">
+                                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h5 class="fw-bold text-dark mb-0">${city.name}</h5>
+                                            <span class="badge bg-warning bg-opacity-20 text-dark small">${temp}</span>
+                                        </div>
+                                        <p class="text-muted small mb-3">${city.region}</p>
+                                    </div>
+                                    <div class="pt-3 border-top d-flex justify-content-between align-items-center text-muted small">
+                                        <span>💨 Wind</span>
+                                        <span class="fw-semibold text-dark">${wind}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    citiesGrid.insertAdjacentHTML('beforeend', card);
+                })
+                .catch(err => {
+                    const card = `
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card card-custom border-0 shadow-sm h-100">
+                                <div class="card-body p-4">
+                                    <h5 class="fw-bold text-dark mb-1">${city.name}</h5>
+                                    <p class="text-muted small mb-3">${city.region}</p>
+                                    <span class="text-muted small">Forecast unavailable</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    citiesGrid.insertAdjacentHTML('beforeend', card);
+                });
+        });
+    });
+</script>
+{% endblock %}

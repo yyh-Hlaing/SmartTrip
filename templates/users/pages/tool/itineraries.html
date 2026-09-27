@@ -1,0 +1,238 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Trip Planner & Itineraries{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.min.js"></script>
+
+<style>
+    .map-container {
+        height: 800px;
+        border-radius: 16px;
+        z-index: 1;
+    }
+    .seq-badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    .custom-map-icon {
+        background: transparent;
+        border: none;
+    }
+    .leaflet-routing-container {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+
+    <!-- Search Bar -->
+    <!-- <div class="card card-custom border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-9">
+                    <input type="text" id="searchTripInput" class="form-control border-0 bg-light rounded-pill px-3 py-2" placeholder="Search itineraries by title...">
+                </div>
+                <div class="col-md-3">
+                    <a href="/trip/create" class="btn btn-outline-dark w-100 rounded-pill fw-medium py-2">
+                        + New Itinerary
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+    <div class="row g-4 mb-5">
+        
+        <div class="col-lg-5">
+            <div class="d-flex flex-column gap-3" id="itineraries-grid" style="max-height: 800px; overflow-y: auto; padding-right: 4px;">
+                {% if trips %}
+                    {% for trip in trips %}
+                    <div class="card card-custom border-0 shadow-sm trip-card" data-name="{{ trip.title | lower }}" data-trip-id="{{ trip.id }}">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-warning bg-opacity-25 text-dark fw-semibold">Saved Route</span>
+                                <span class="text-muted small">📅 {{ trip.created_at }}</span>
+                            </div>
+                            
+                            <h5 class="fw-bold text-dark mb-3">{{ trip.title }}</h5>
+
+                            <!-- Sequence Summary -->
+                            <div class="p-3 bg-light rounded-3 mb-3 border">
+                                <div class="d-flex align-items-center gap-2 small mb-1">
+                                    <span class="seq-badge bg-primary text-white">📍</span>
+                                    <span class="text-muted">Start:</span>
+                                    <strong class="text-dark">Starting Position</strong>
+                                </div>
+                                {% if trip.waypoints %}
+                                <div class="d-flex align-items-center gap-2 small mb-1">
+                                    <span class="seq-badge bg-secondary text-white">🛑</span>
+                                    <span class="text-muted">Stops:</span>
+                                    <strong class="text-dark">{{ trip.waypoints | length }} Waypoint(s)</strong>
+                                </div>
+                                {% endif %}
+                                <div class="d-flex align-items-center gap-2 small mb-1">
+                                    <span class="seq-badge bg-dark text-white">🏁</span>
+                                    <span class="text-muted">Destination:</span>
+                                    <strong class="text-dark">{{ trip.destination.name if trip.destination else 'Selected Destination' }}</strong>
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-top d-flex justify-content-between align-items-center">
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-dark rounded-pill px-3" onclick="loadTripOnMap({{ trip.id }})">
+                                        🗺️ View Route
+                                    </button>
+                                    <a href="{{ url_for('user.edit_trip', trip_id=trip.id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                        ✏️ Edit
+                                    </a>
+                                </div>
+                                <form action="/trip/delete/{{ trip.id }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this trip?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="card border-0 shadow-sm text-center p-5 rounded-4">
+                        <div class="card-body">
+                            <h5 class="fw-bold text-dark mb-2">No Saved Trips Yet</h5>
+                            <p class="text-muted small mb-4">You haven't created any custom trip itineraries. Create one with sequential stops to preview route paths!</p>
+                            <a href="/trip/create" class="btn btn-warning rounded-pill px-4 fw-bold text-dark">Plan Your First Trip</a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sticky Leaflet Map Column -->
+        <div class="col-lg-7">
+            <div class="card card-custom border-0 shadow-sm sticky-top" style="top: 20px; z-index: 10;">
+                <div class="card-header bg-white border-0 pt-3 px-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0">🧭 Route Preview</h6>
+                    <span id="active-trip-name" class="badge bg-light text-dark border">Select a trip card to render route</span>
+                </div>
+                <div class="card-body p-2">
+                    <div id="map" class="map-container"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const trips = {{ trips_json | safe }};
+    const defaultLat = {{ (user.latitude if user.latitude is defined and user.latitude else 16.8661) }};
+    const defaultLng = {{ (user.longitude if user.longitude is defined and user.longitude else 96.1951) }};
+
+    let map;
+    let routingControl = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        map = L.map('map').setView([defaultLat, defaultLng], 12);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        if (trips && trips.length > 0) {
+            loadTripOnMap(trips[0].id);
+        } else {
+            L.marker([defaultLat, defaultLng]).addTo(map)
+                .bindPopup("<b>Your Current Location</b>").openPopup();
+        }
+
+        const searchInput = document.getElementById('searchTripInput');
+        const cards = document.querySelectorAll('.trip-card');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const query = searchInput.value.toLowerCase().trim();
+                cards.forEach(card => {
+                    const name = card.getAttribute('data-name');
+                    card.style.display = name.includes(query) ? 'block' : 'none';
+                });
+            });
+        }
+    });
+
+    function loadTripOnMap(tripId) {
+        const trip = trips.find(t => t.id === tripId);
+        if (!trip) return;
+
+        document.getElementById('active-trip-name').textContent = trip.title;
+
+        // Clear existing route control from map
+        if (routingControl) {
+            map.removeControl(routingControl);
+            routingControl = null;
+        }
+
+        const waypoints = [];
+
+        // 1. Add Start Location
+        if (trip.start_lat && trip.start_lng) {
+            waypoints.push(L.latLng(trip.start_lat, trip.start_lng));
+        }
+
+        // 2. Add Intermediate Waypoints
+        if (trip.waypoints && trip.waypoints.length > 0) {
+            trip.waypoints.forEach(wp => {
+                waypoints.push(L.latLng(wp.lat, wp.lng));
+            });
+        }
+
+        // 3. Add Destination Location
+        if (trip.destination && trip.destination.lat && trip.destination.lng) {
+            waypoints.push(L.latLng(trip.destination.lat, trip.destination.lng));
+        }
+
+        if (waypoints.length >= 2) {
+            routingControl = L.Routing.control({
+                waypoints: waypoints,
+                routeWhileDragging: false,
+                addWaypoints: false,
+                draggableWaypoints: false,
+                fitSelectedRoutes: true,
+                lineOptions: {
+                    styles: [{ color: '#0d6efd', opacity: 0.8, weight: 5 }]
+                },
+                createMarker: function(i, wp, n) {
+                    let iconHtml = '';
+                    if (i === 0) {
+                        iconHtml = `<div style="background-color: #0d6efd; color: #fff; font-weight: bold; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">📍</div>`;
+                    } else if (i === n - 1) {
+                        iconHtml = `<div style="background-color: #ffc107; color: #000; font-weight: bold; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #000; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">🏁</div>`;
+                    } else {
+                        iconHtml = `<div style="background-color: #212529; color: #fff; font-weight: bold; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-size: 0.75rem;">${i}</div>`;
+                    }
+
+                    const customIcon = L.divIcon({
+                        className: 'custom-map-icon',
+                        html: iconHtml,
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+
+                    return L.marker(wp.latLng, { icon: customIcon });
+                }
+            }).addTo(map);
+        }
+    }
+</script>
+{% endblock %}

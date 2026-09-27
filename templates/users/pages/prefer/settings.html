@@ -1,0 +1,184 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - User Settings{% endblock %}
+
+{% block content %}
+
+<div x-data="{ show: false, message: '' }" @settings-updated.window="
+        show = true;
+        message = $event.detail;
+        setTimeout(() => show = false, 3000)
+    " x-show="show" x-transition class="alert alert-success rounded-3 fw-medium" style="
+        position: fixed;
+        top: 80px;
+        right: 24px;
+        z-index: 9999;
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border-color: #c8e6c9;
+        min-width: 300px;
+    " role="alert">
+    <span x-text="message"></span>
+</div>
+<div class="container" style="max-width: 1300px">
+    <div class="card card-custom border-0 shadow-sm mb-4">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h5 class="fw-bold mb-1 text-dark">Password & Security</h5>
+                <p class="text-muted mb-0 small">Protect your account by regularly updating your password.</p>
+            </div>
+            <a href="/change-password" class="btn btn-outline-dark px-4 py-2 rounded-3 shadow-sm fw-medium">
+                🔒 Change Password
+            </a>
+        </div>
+    </div>
+    <div class="container my-2 ">
+
+        <div class="card card-custom">
+            <div class="card-body p-md-4">
+
+                <form @submit.prevent="
+    let formData = new FormData();
+    formData.append('phone', document.getElementById('phone').value);
+    formData.append('bio', document.getElementById('bio').value);
+    formData.append('latitude', document.getElementById('latitude').value);
+    formData.append('longitude', document.getElementById('longitude').value);
+    
+    let fileInput = document.getElementById('profile_pic');
+    if(fileInput.files[0]) {
+        formData.append('profile_pic', fileInput.files[0]);
+    }
+
+    fetch('/api/user/settings', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            window.dispatchEvent(new CustomEvent('settings-updated', { detail: 'Settings updated successfully!' }));
+        }
+    })
+    .catch(error => {
+        alert('An error occurred while saving settings.');
+        console.error(error);
+    });
+">
+
+                    <!-- Profile Picture Preview Section -->
+                    <div class="d-flex align-items-center gap-4 mb-4 pb-3 border-bottom">
+                        <div class="position-relative">
+                            <img id="avatar-preview"
+                                src="{{ url_for('static', filename=('uploads/' + user.profile_pic) if user.profile_pic else 'images/default_avatar.png') }}"
+                                class="rounded-circle object-fit-cover shadow-sm border"
+                                style="width:90px;height:90px;">
+                        </div>
+                        <div>
+                            <label for="profile_pic" class="form-label fw-semibold text-secondary mb-1">Profile
+                                Picture</label>
+                            <input type="file" id="profile_pic" name="profile_pic" accept="image/*"
+                                class="form-control form-control-sm"
+                                onchange="document.getElementById('avatar-preview').src = window.URL.createObjectURL(this.files[0])">
+                            <small class="text-muted d-block mt-1">Choose a PNG, JPG or GIF image.</small>
+                        </div>
+                    </div>
+
+                    <!-- Two-Column Grid Layout (col-6 split) -->
+                    <div class="row g-3">
+
+                        <!-- Username (Read-only) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Username</label>
+                            <input type="text" value="{{ user.username }}" disabled class="form-control"
+                                style="background-color: #f8f9fa; cursor: not-allowed; border-radius: 12px; padding: 0.85rem 1.25rem;">
+                        </div>
+
+                        <!-- Email (Read-only) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Email Address</label>
+                            <input type="email" value="{{ user.email }}" disabled class="form-control"
+                                style="background-color: #f8f9fa; cursor: not-allowed; border-radius: 12px; padding: 0.85rem 1.25rem;">
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label fw-semibold text-secondary">Phone Number</label>
+                            <input type="text" id="phone" name="phone" value="{{ user.phone or '' }}"
+                                placeholder="Enter your phone number" class="form-control form-control-custom">
+                        </div>
+
+                        <!-- Location Section with Geolocation Toggle -->
+                        <div class="col-md-6">
+                            <div class="">
+
+                                <label class="form-label fw-semibold text-secondary mb-2 d-block">
+                                    Location Coordinates
+                                </label>
+
+                                <button type="button" @click="
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            document.getElementById('latitude').value = position.coords.latitude;
+                            document.getElementById('longitude').value = position.coords.longitude;
+
+                            window.dispatchEvent(
+                                new CustomEvent('settings-updated', {
+                                    detail: 'Location fetched successfully!'
+                                })
+                            );
+                        },
+                        error => {
+                            alert('Unable to retrieve your location. Please check permissions.');
+                        }
+                    );
+                } else {
+                    alert('Geolocation is not supported by your browser.');
+                }
+            " class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 text-dark fw-medium "
+                                    style="font-size: 0.85rem;">
+                                    📍 Get Current Location
+                                </button>
+
+                            </div>
+                        </div>
+
+                        <!-- Location: Latitude -->
+                        <div class="col-md-6">
+                            <label for="latitude" class="form-label fw-semibold text-secondary small">Latitude</label>
+                            <input type="number" step="any" id="latitude" name="latitude"
+                                value="{{ user.latitude or '' }}" placeholder="e.g. 16.7954"
+                                class="form-control form-control-custom">
+                        </div>
+
+                        <!-- Location: Longitude -->
+                        <div class="col-md-6">
+                            <label for="longitude" class="form-label fw-semibold text-secondary small">Longitude</label>
+                            <input type="number" step="any" id="longitude" name="longitude"
+                                value="{{ user.longitude or '' }}" placeholder="e.g. 96.1610"
+                                class="form-control form-control-custom">
+                        </div>
+
+                        <!-- Bio (Full Width spanning both columns) -->
+                        <div class="col-12">
+                            <label for="bio" class="form-label fw-semibold text-secondary">Bio</label>
+                            <textarea id="bio" name="bio" rows="3"
+                                placeholder="Tell us a little bit about yourself or your travel style..."
+                                class="form-control form-control-custom">{{ user.bio or '' }}</textarea>
+                        </div>
+
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-flex justify-content-end pt-4 mt-4 border-top">
+                        <button type="submit" class="btn btn-gold px-4 py-2 rounded-3 shadow-sm">
+                            Save Changes
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

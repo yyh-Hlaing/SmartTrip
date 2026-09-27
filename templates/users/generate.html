@@ -1,0 +1,2618 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip {% endblock %}
+
+{% block content %}
+
+<!-- =========================================================
+     LEAFLET CSS
+========================================================= -->
+
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<style>
+
+    /* =====================================================
+       SMARTTRIP - ENHANCED FONTS
+    ====================================================== */
+
+    body, .card, .form-label, .form-control, .btn {
+        font-size: 1.05rem !important;
+    }
+
+    h4 {
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+    }
+
+    h6 {
+        font-size: 1.3rem !important;
+        font-weight: 600 !important;
+    }
+
+    #map {
+        width: 100%;
+        height: 500px;
+        border-radius: 0 0 10px 10px;
+    }
+
+    .recommendation-scroll {
+        max-height: 430px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .recommendation-scroll::-webkit-scrollbar {
+        width: 7px;
+    }
+
+    .recommendation-scroll::-webkit-scrollbar-thumb {
+        background: #adb5bd;
+        border-radius: 10px;
+    }
+
+    .recommendation-scroll::-webkit-scrollbar-track {
+        background: #f8f9fa;
+    }
+
+    .place-item {
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .place-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .place-name {
+        font-weight: 700 !important;
+        font-size: 1.2rem !important;
+        margin-bottom: 4px;
+    }
+
+    .place-address {
+        font-size: 1rem !important;
+        color: #6c757d;
+    }
+
+    .place-distance {
+        font-size: 0.95rem !important;
+        color: #198754;
+    }
+
+    .place-rating {
+        font-size: 1rem !important;
+        color: #f59f00;
+        font-weight: 700 !important;
+    }
+
+    .place-review {
+        font-size: 0.95rem !important;
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    .map-link {
+        text-decoration: none;
+    }
+
+    .empty-place {
+        padding: 25px;
+        text-align: center;
+        color: #6c757d;
+        font-size: 1.1rem !important;
+    }
+
+    .card-header {
+        font-weight: 700 !important;
+        font-size: 1.2rem !important;
+    }
+
+    #loadingIndicator .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    #errorBox {
+        white-space: pre-line;
+        font-size: 1.1rem !important;
+    }
+
+    .leaflet-popup-content {
+        line-height: 1.6;
+        font-size: 1rem !important;
+    }
+
+    #debugConsole {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 13px !important;
+        padding: 12px;
+        border-radius: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        margin-top: 10px;
+        display: none;
+    }
+
+    #debugConsole .error { color: #f48771; }
+    #debugConsole .success { color: #6a9955; }
+    #debugConsole .info { color: #569cd6; }
+    #debugConsole .warn { color: #dcdcaa; }
+
+    .attraction-tag {
+        display: inline-block;
+        background: #e9ecef;
+        padding: 3px 12px;
+        border-radius: 12px;
+        font-size: 0.9rem !important;
+        color: #495057;
+        margin-top: 4px;
+        font-weight: 600;
+    }
+
+    .itinerary-places {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .itinerary-places li {
+        padding: 10px 0;
+        border-bottom: 1px solid #f1f3f5;
+        font-size: 1.15rem !important;
+        font-weight: 500 !important;
+        line-height: 1.6;
+    }
+
+    .itinerary-places li:last-child { border-bottom: none; }
+
+    .itinerary-places li .place-icon {
+        margin-right: 10px;
+        font-size: 1.3rem !important;
+    }
+
+    .list-group-item {
+        font-size: 1.05rem !important;
+        padding: 12px 16px !important;
+    }
+
+    .list-group-item .place-name {
+        font-weight: 700 !important;
+        font-size: 1.25rem !important;
+    }
+
+    .form-control, .form-label { font-size: 1.1rem !important; }
+
+    .form-control {
+        padding: 12px 15px !important;
+        height: auto !important;
+    }
+
+    .btn {
+        font-size: 1.15rem !important;
+        padding: 12px 20px !important;
+    }
+
+    .badge {
+        font-size: 1rem !important;
+        padding: 5px 12px !important;
+    }
+
+    .card-body { padding: 1.5rem !important; }
+    .card-header { padding: 1rem 1.5rem !important; }
+
+    #loadingIndicator p { font-size: 1.2rem !important; }
+
+    .card-header .badge { font-size: 0.95rem !important; }
+
+    .place-description {
+        font-size: 1rem !important;
+        color: #495057;
+        margin-top: 4px;
+        line-height: 1.5;
+    }
+
+    .place-amenities, .place-specialty {
+        font-size: 0.95rem !important;
+        color: #6c757d;
+        margin-top: 4px;
+    }
+
+    #tipsList .list-group-item,
+    #packingList .list-group-item {
+        font-size: 1.1rem !important;
+        font-weight: 500 !important;
+        padding: 12px 18px !important;
+    }
+
+    /* ROUTE INFO CARD */
+    .route-stat-label {
+        font-size: 0.95rem;
+        color: #6c757d;
+        font-weight: 600;
+    }
+
+    .route-stat-value {
+        font-size: 1.3rem;
+        font-weight: 700;
+    }
+
+    .route-icon {
+        font-size: 2rem;
+        margin-right: 12px;
+    }
+
+    /* MAP LEGEND */
+    .map-legend {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 10px 14px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        font-size: 0.95rem;
+        line-height: 1.8;
+        font-weight: 600;
+    }
+
+    .map-legend .legend-line {
+        display: inline-block;
+        width: 28px;
+        height: 4px;
+        vertical-align: middle;
+        margin-right: 8px;
+        border-radius: 2px;
+    }
+
+    .map-legend .legend-dot {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        vertical-align: middle;
+        margin-right: 8px;
+        border: 2px solid #fff;
+        box-shadow: 0 0 3px rgba(0,0,0,0.3);
+    }
+
+    /* SPECIAL RESTAURANT BADGE */
+    .special-badge {
+        display: inline-block;
+        background: #dc3545;
+        color: #fff;
+        font-size: 0.8rem !important;
+        padding: 2px 8px;
+        border-radius: 10px;
+        margin-left: 8px;
+        font-weight: 700;
+        vertical-align: middle;
+    }
+
+</style>
+
+
+<!-- =========================================================
+     SMARTTRIP PLANNER
+========================================================= -->
+
+<div class="card p-4 shadow-sm mb-4">
+
+    <h4 class="mb-3">
+        ✈️ SmartTrip Recommendation
+    </h4>
+
+    <div class="row g-3">
+
+        <div class="col-md-3">
+            <label class="form-label fw-bold">
+                ထွက်မည့်မြို့ (Origin)
+            </label>
+            <input
+                type="text"
+                id="originInput"
+                class="form-control"
+                placeholder="ဥပမာ - ရန်ကုန်"
+                value=""
+            >
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-bold">
+                သွားမည့်မြို့ (Destination)
+            </label>
+            <input
+                type="text"
+                id="destInput"
+                class="form-control"
+                value=""
+                placeholder="ဥပမာ - ပြည်"
+            >
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-bold">
+                ရက်အရေအတွက် (Days)
+            </label>
+            <input
+                type="number"
+                id="daysInput"
+                class="form-control"
+                value="3"
+                min="1"
+                max="7"
+            >
+        </div>
+
+        <div class="col-md-4 d-flex align-items-end">
+            <button
+                type="button"
+                id="planTripButton"
+                class="btn btn-primary w-100 fw-bold"
+            >
+                အချက်အလက် ရှာဖွေမည် 
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     DEBUG CONSOLE
+========================================================= -->
+
+<button 
+    type="button" 
+    id="toggleDebugBtn" 
+    class="btn btn-sm btn-outline-secondary mb-2"
+>
+    🐛 Show/Hide Debug Console
+</button>
+
+<div id="debugConsole"></div>
+
+
+<!-- =========================================================
+     LOADING
+========================================================= -->
+
+<div
+    id="loadingIndicator"
+    style="display:none;"
+    class="text-center my-4"
+>
+    <div
+        class="spinner-border text-primary"
+        role="status"
+    >
+        <span class="visually-hidden">Loading...</span>
+    </div>
+
+    <p class="mt-2 fw-bold">
+        သင့်ခရီးစဉ်ကို စီစဉ်နေပါသည်...
+        <br>
+        🗺️ Hotel / Restaurant / Attractions များကို ရှာဖွေနေပါသည်...
+    </p>
+</div>
+
+
+<!-- =========================================================
+     ERROR
+========================================================= -->
+
+<div
+    id="errorBox"
+    class="alert alert-danger"
+    style="display:none;"
+></div>
+
+
+<!-- =========================================================
+     RESULTS
+========================================================= -->
+
+<div id="resultsSection" style="display:none;">
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                🗺️ လမ်းကြောင်းမြေပုံ
+            </div>
+            <div class="card-body p-0">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- =========================================================
+     ROUTE INFO (ကား + ရထား ၂ မျိုးလုံး)
+========================================================= -->
+
+<div class="row mb-4" id="routeInfoSection" style="display:none;">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="row g-3 align-items-center">
+
+                    <!-- ကားလမ်းကြောင်း -->
+                    <div class="col-md-5">
+                        <div class="d-flex align-items-center">
+                            <div class="route-icon">🚗</div>
+                            <div>
+                                <div class="route-stat-label">ကားလမ်းခရီး</div>
+                                <div id="routeCarInfo" class="route-stat-value" style="color:#0d6efd;">
+                                    --
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ရထားလမ်းကြောင်း
+                    <div class="col-md-5">
+                        <div class="d-flex align-items-center">
+                            <div class="route-icon">🚆</div>
+                            <div>
+                                <div class="route-stat-label">ရထားလမ်းခရီး</div>
+                                <div id="routeTrainInfo" class="route-stat-value" style="color:#fd7e14;">
+                                    --
+                                </div>
+                            </div>
+                        </div>
+                    </div> -->
+
+                    <!-- ခရီးလမ်းကြောင်း -->
+                    <div class="col-md-2">
+                        <div class="d-flex align-items-center">
+                            <div class="route-icon">📍</div>
+                            <div>
+                                <div class="route-stat-label">လမ်းကြောင်း</div>
+                                <div id="routePath" style="font-size:1.05rem; font-weight:700; color:#495057;">
+                                    --
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<h4 class="mt-4 mb-3">
+    🌟 အကြံပြုချက်များ
+</h4>
+
+
+<div class="row">
+
+    <!-- HOTELS -->
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-warning text-dark fw-bold">
+                🏨 ဟိုတယ်များ
+                <span class="badge bg-dark float-end" id="hotelCount">0</span>
+            </div>
+            <div class="recommendation-scroll">
+                <ul class="list-group list-group-flush" id="hotelList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESTAURANTS -->
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-success text-white fw-bold">
+                🍲 စားသောက်ဆိုင်များ
+                <span class="badge bg-light text-dark float-end" id="restaurantCount">0</span>
+            </div>
+            <div class="recommendation-scroll">
+                <ul class="list-group list-group-flush" id="restaurantList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ATTRACTIONS -->
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-info text-white fw-bold">
+                🏛️ လည်ပတ်စရာနေရာများ
+                <span class="badge bg-light text-dark float-end" id="attractionCount">0</span>
+            </div>
+            <div class="recommendation-scroll">
+                <ul class="list-group list-group-flush" id="attractionList"></ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ITINERARY -->
+<h4 class="mb-3">
+    📅 နေ့အလိုက် သွားရမည့်နေရာများ
+</h4>
+
+<div class="row" id="itineraryCardsContainer"></div>
+
+
+<!-- LOCAL TIPS -->
+<h4 class="mt-4 mb-3">
+    💡 ဒေသဆိုင်ရာ ခရီးသွားအကြံပြုချက်များ
+</h4>
+
+<div class="card shadow-sm mb-3">
+    <ul class="list-group list-group-flush" id="tipsList"></ul>
+</div>
+
+
+<!-- PACKING -->
+<h4 class="mt-4 mb-3">
+    🧳 ထုပ်ပိုးရန် အကြံပြုချက်များ
+</h4>
+
+<div class="card shadow-sm mb-3">
+    <ul class="list-group list-group-flush" id="packingList"></ul>
+</div>
+
+</div>
+
+
+<!-- =========================================================
+     LEAFLET JS
+========================================================= -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+
+<script>
+
+"use strict";
+
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const CONFIG = {
+
+    DEFAULT_DAYS: 3,
+
+    MAX_DAYS: 7,
+
+    // =====================================================
+    // OPENROUTER API KEY - သင့် key ကို ဒီမှာ ထည့်ပါ
+    // =====================================================
+
+    // OpenRouter model - သင့်နှစ်သက်ရာ model ကို ရွေးပါ
+    OPENROUTER_MODEL: "google/gemini-3.5-flash",
+
+    OPENROUTER_API_URL: "https://openrouter.ai/api/v1/chat/completions",
+
+    // ရထား ပျမ်းမျှအမြန်နှုန်း (km/h)
+    TRAIN_AVG_SPEED_KMH: 40,
+
+    // ရထားဘူတာရပ်ဆိုင်းချိန် (မိနစ်)
+    TRAIN_STOP_MINUTES: 5,
+
+    // စားသောက်ဆိုင် ရှာဖွေမည့် အချင်းဝက် (မီတာ)
+    RESTAURANT_SEARCH_RADIUS_M: 15000,
+
+    // =====================================================
+    // DYNAMIC COUNTS - ရက်အရေအတွက်ပေါ်မူတည်ပြီး
+    // =====================================================
+    DYNAMIC_COUNTS: {
+        1: { hotels: 5, restaurants: 6, attractions: 6 },
+        2: { hotels: 6, restaurants: 7, attractions: 7 },
+        3: { hotels: 7, restaurants: 8, attractions: 8 },
+        4: { hotels: 8, restaurants: 9, attractions: 9 },
+        5: { hotels: 9, restaurants: 10, attractions: 10 },
+        6: { hotels: 10, restaurants: 11, attractions: 11 },
+        7: { hotels: 11, restaurants: 12, attractions: 12 }
+    },
+
+    // =====================================================
+    // SPECIAL RESTAURANTS - မြို့အလိုက် ထည့်သွင်းရန်
+    // =====================================================
+    SPECIAL_RESTAURANTS: {
+
+        // ပြည်မြို့အတွက် အထူး စားသောက်ဆိုင်များ
+        "ပြည်": [
+            {
+                name: "ဒေါ်ဥထမင်းသုပ်",
+                address: "ပြည်မြို့၊ ဗိုလ်ချုပ်လမ်း",
+                rating: 4.5,
+                reviewCount: 250,
+                cuisine: "မြန်မာထမင်းသုပ်",
+                phone: "",
+                openingHours: "မနက် ၇:၀၀ - ည ၉:၀၀",
+                website: "",
+                lat: 18.8200,
+                lng: 95.2160,
+                isSpecial: true
+            },
+            {
+                name: "ပေါက်ကြီးရေခဲမုန့်",
+                address: "ပြည်မြို့၊ ဈေးတန်းလမ်း",
+                rating: 4.3,
+                reviewCount: 180,
+                cuisine: "ရေခဲမုန့်၊ အအေးဓာတ်စာ",
+                phone: "",
+                openingHours: "မနက် ၉:၀၀ - ည ၁၀:၀၀",
+                website: "",
+                lat: 18.8215,
+                lng: 95.2175,
+                isSpecial: true
+            }
+        ],
+
+        // အင်္ဂလိပ်လို ရိုက်ထည့်လျှင်လည်း အလုပ်လုပ်ရန်
+        "pyay": [
+            {
+                name: "Daw Ou",
+                address: "ပြည်မြို့၊ ဗိုလ်ချုပ်လမ်း",
+                rating: 4.5,
+                reviewCount: 250,
+                cuisine: "မြန်မာထမင်းသုပ်",
+                phone: "",
+                openingHours: "မနက် ၇:၀၀ - ည ၉:၀၀",
+                website: "",
+                lat: 18.8200,
+                lng: 95.2160,
+                isSpecial: true
+            },
+            {
+                name: "Pauk Gyiရေခဲမုန့်",
+                address: "ပြည်မြို့၊ ဈေးတန်းလမ်း",
+                rating: 4.3,
+                reviewCount: 180,
+                cuisine: "ရေခဲမုန့်၊ အအေးဓာတ်စာ",
+                phone: "",
+                openingHours: "မနက် ၉:၀၀ - ည ၁၀:၀၀",
+                website: "",
+                lat: 18.8215,
+                lng: 95.2175,
+                isSpecial: true
+            }
+        ],
+
+        "Pyay": [
+            {
+                name: "Daw Ou ထမင်းသုပ်",
+                address: "ပြည်မြို့၊ ဗိုလ်ချုပ်လမ်း",
+                rating: 4.5,
+                reviewCount: 250,
+                cuisine: "မြန်မာထမင်းသုပ်",
+                phone: "",
+                openingHours: "မနက် ၇:၀၀ - ည ၉:၀၀",
+                website: "",
+                lat: 18.8200,
+                lng: 95.2160,
+                isSpecial: true
+            },
+            {
+                name: "Pauk Gyi ရေခဲမုန့်",
+                address: "ပြည်မြို့၊ ဈေးတန်းလမ်း",
+                rating: 4.3,
+                reviewCount: 180,
+                cuisine: "ရေခဲမုန့်၊ အအေးဓာတ်စာ",
+                phone: "",
+                openingHours: "မနက် ၉:၀၀ - ည ၁၀:၀၀",
+                website: "",
+                lat: 18.8215,
+                lng: 95.2175,
+                isSpecial: true
+            }
+        ]
+
+    },
+
+    // =====================================================
+    // SPECIAL ATTRACTIONS - မြို့အလိုက် ထည့်သွင်းရန်
+    // (ပြည် / pyay / Pyay အတွက်သာ ဟံသာဂီရိ နှင့် ဥဿဖတောင်)
+    // =====================================================
+    SPECIAL_ATTRACTIONS: {
+
+        "ပြည်": [
+            {
+                name: "ဟံသာဂီရိဘုရား",
+                address: "ပြည်မြို့၊ ဟံသာဂီရိတောင်",
+                category: "Pagoda",
+                rating: 4.7,
+                review_count: 500,
+                description: "ပြည်မြို့၏ အထင်ကရ ဘုရား၊ မြို့လယ်မှ မြင်နိုင်သော တောင်ကုန်းပေါ်တွင် တည်ရှိသည်။"
+            },
+            {
+                name: "ဥဿဖတောင်",
+                address: "ပြည်မြို့အနီး၊ ဥဿဖတောင်",
+                category: "Mountain",
+                rating: 4.5,
+                review_count: 300,
+                description: "ပြည်မြို့အနီးရှိ သဘာဝတောင်၊ ရှုခင်းကောင်းမွန်ပြီး ဘုရားစေတီများ တည်ရှိသည်။"
+            }
+        ],
+
+        "pyay": [
+            {
+                name: "ဟံသာဂီရိဘုရား",
+                address: "ပြည်မြို့၊ ဟံသာဂီရိတောင်",
+                category: "Pagoda",
+                rating: 4.7,
+                review_count: 500,
+                description: "ပြည်မြို့၏ အထင်ကရ ဘုရား၊ မြို့လယ်မှ မြင်နိုင်သော တောင်ကုန်းပေါ်တွင် တည်ရှိသည်။"
+            },
+            {
+                name: "ဥဿဖတောင်",
+                address: "ပြည်မြို့အနီး၊ ဥဿဖတောင်",
+                category: "Mountain",
+                rating: 4.5,
+                review_count: 300,
+                description: "ပြည်မြို့အနီးရှိ သဘာဝတောင်၊ ရှုခင်းကောင်းမွန်ပြီး ဘုရားစေတီများ တည်ရှိသည်။"
+            }
+        ],
+
+        "Pyay": [
+            {
+                name: "ဟံသာဂီရိဘုရား",
+                address: "ပြည်မြို့၊ ဟံသာဂီရိတောင်",
+                category: "Pagoda",
+                rating: 4.7,
+                review_count: 500,
+                description: "ပြည်မြို့၏ အထင်ကရ ဘုရား၊ မြို့လယ်မှ မြင်နိုင်သော တောင်ကုန်းပေါ်တွင် တည်ရှိသည်။"
+            },
+            {
+                name: "ဥဿဖတောင်",
+                address: "ပြည်မြို့အနီး၊ ဥဿဖတောင်",
+                category: "Mountain",
+                rating: 4.5,
+                review_count: 300,
+                description: "ပြည်မြို့အနီးရှိ သဘာဝတောင်၊ ရှုခင်းကောင်းမွန်ပြီး ဘုရားစေတီများ တည်ရှိသည်။"
+            }
+        ]
+
+    }
+
+};
+
+
+/* =========================================================
+   MYANMAR RAILWAY STATIONS (အဓိကဘူတာကြီးများ)
+========================================================= */
+
+const MYANMAR_RAILWAY_STATIONS = [
+    // ရန်ကုန်တိုင်း
+    { name: "ရန်ကုန်", lat: 16.8409, lng: 96.1735 },
+    { name: "ရွာထောင်", lat: 16.9333, lng: 96.1833 },
+    { name: "တိုက်ကြီး", lat: 17.0333, lng: 96.1333 },
+    { name: "ဖြူး", lat: 17.1500, lng: 96.0333 },
+    { name: "ဇီးကုန်း", lat: 17.3000, lng: 96.0333 },
+
+    // ပဲခူးတိုင်း
+    { name: "ပဲခူး", lat: 17.3350, lng: 96.4810 },
+    { name: "ရွှေမော်ဓောဘုရား", lat: 17.3400, lng: 96.4700 },
+    { name: "ညောင်ခြေထောက်", lat: 17.4500, lng: 96.5000 },
+    { name: "ကျောက်တံခါး", lat: 17.5500, lng: 96.5500 },
+    { name: "သနပ်ပင်", lat: 17.6500, lng: 96.6000 },
+    { name: "ပြည်", lat: 18.8200, lng: 95.2160 },
+    { name: "ပေါင်းတလည်", lat: 18.5500, lng: 95.4000 },
+    { name: "ရွှေတောင်", lat: 18.4500, lng: 95.5000 },
+    { name: "ပန်းတောင်း", lat: 18.3000, lng: 95.6500 },
+    { name: "အုတ်ဖို", lat: 18.2000, lng: 95.7500 },
+    { name: "ပျဉ်းမနား", lat: 19.7500, lng: 96.2000 },
+    { name: "တောင်ငူ", lat: 18.9333, lng: 96.4333 },
+    { name: "ကညွတ်ကွင်း", lat: 18.8000, lng: 96.5000 },
+    { name: "ရေတာရှည်", lat: 18.7000, lng: 96.5500 },
+    { name: "ထန်းတပင်", lat: 18.6000, lng: 96.6000 },
+    { name: "ပဲနွယ်ကုန်း", lat: 18.5000, lng: 96.6500 },
+
+    // မန္တလေးတိုင်း
+    { name: "မန္တလေး", lat: 21.9750, lng: 96.0833 },
+    { name: "ရမည်းသင်း", lat: 20.9333, lng: 95.8333 },
+    { name: "ကျောက်ပန်းတောင်း", lat: 20.7333, lng: 95.6167 },
+    { name: "ညောင်ဦး", lat: 21.1950, lng: 94.9080 },
+    { name: "ပုဂံ", lat: 21.1722, lng: 94.8600 },
+    { name: "ချောက်", lat: 20.9000, lng: 95.1333 },
+    { name: "မြင်းခြံ", lat: 21.4667, lng: 95.8833 },
+    { name: "တောင်သာ", lat: 21.6500, lng: 95.9500 },
+    { name: "ပျော်ဘွယ်", lat: 21.8000, lng: 96.0000 },
+    { name: "ကျောက်ဆည်", lat: 21.9000, lng: 96.0500 },
+    { name: "စဉ့်ကိုင်", lat: 21.9500, lng: 96.0700 },
+
+    // ရှမ်းပြည်နယ်
+    { name: "ရွှေညောင်", lat: 20.8000, lng: 97.0333 },
+    { name: "တောင်ကြီး", lat: 20.7833, lng: 97.0333 },
+    { name: "အောင်ပန်း", lat: 20.5000, lng: 97.0000 },
+    { name: "ကလော", lat: 20.7167, lng: 96.7333 },
+
+    // မွန်ပြည်နယ်
+    { name: "မော်လမြိုင်", lat: 16.4900, lng: 97.6300 },
+    { name: "ကျိုက်ထို", lat: 17.3000, lng: 97.1000 },
+    { name: "သထုံ", lat: 16.9200, lng: 97.3700 },
+
+    // ဧရာဝတီတိုင်း
+    { name: "ပုသိမ်", lat: 16.7800, lng: 94.7300 },
+    { name: "ဟင်္သာတ", lat: 17.6500, lng: 95.4600 },
+    { name: "မအူပင်", lat: 17.2000, lng: 95.5000 },
+    { name: "ကျုံပျော်", lat: 16.9500, lng: 95.1500 },
+
+    // ရခိုင်ပြည်နယ်
+    { name: "စစ်တွေ", lat: 20.1500, lng: 92.9000 },
+    { name: "သံတွဲ", lat: 18.4667, lng: 94.3667 },
+    { name: "ကျောက်ဖြူ", lat: 19.4167, lng: 93.5500 },
+    { name: "မာန်အောင်", lat: 18.8500, lng: 93.5000 }
+];
+
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let mapInstance = null;
+
+let mapMarkers = [];
+
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const DOM = {
+
+    originInput: document.getElementById("originInput"),
+    destInput: document.getElementById("destInput"),
+    daysInput: document.getElementById("daysInput"),
+    planBtn: document.getElementById("planTripButton"),
+    loading: document.getElementById("loadingIndicator"),
+    results: document.getElementById("resultsSection"),
+    errorBox: document.getElementById("errorBox"),
+    map: document.getElementById("map"),
+    itineraryContainer: document.getElementById("itineraryCardsContainer"),
+    hotelList: document.getElementById("hotelList"),
+    restaurantList: document.getElementById("restaurantList"),
+    attractionList: document.getElementById("attractionList"),
+    tipsList: document.getElementById("tipsList"),
+    packingList: document.getElementById("packingList"),
+    debugConsole: document.getElementById("debugConsole"),
+    toggleDebugBtn: document.getElementById("toggleDebugBtn"),
+    routeInfoSection: document.getElementById("routeInfoSection"),
+    routeCarInfo: document.getElementById("routeCarInfo"),
+    routeTrainInfo: document.getElementById("routeTrainInfo"),
+    routePath: document.getElementById("routePath")
+
+};
+
+
+/* =========================================================
+   DEBUG LOGGER
+========================================================= */
+
+let debugLogs = [];
+
+function debugLog(message, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    debugLogs.push({ timestamp, message, type });
+    
+    if (DOM.debugConsole) {
+        const entry = document.createElement('div');
+        entry.className = type;
+        entry.textContent = `[${timestamp}] ${message}`;
+        DOM.debugConsole.appendChild(entry);
+        DOM.debugConsole.scrollTop = DOM.debugConsole.scrollHeight;
+    }
+    
+    console.log(`[${type.toUpperCase()}]`, message);
+}
+
+function clearDebugLogs() {
+    debugLogs = [];
+    if (DOM.debugConsole) {
+        DOM.debugConsole.innerHTML = '';
+    }
+}
+
+
+/* =========================================================
+   DYNAMIC COUNTS HELPER
+========================================================= */
+
+function getDynamicCounts(days) {
+    const d = Math.max(1, Math.min(7, parseInt(days, 10) || 3));
+    
+    if (CONFIG.DYNAMIC_COUNTS && CONFIG.DYNAMIC_COUNTS[d]) {
+        return CONFIG.DYNAMIC_COUNTS[d];
+    }
+    
+    return {
+        hotels: Math.min(3 + d, 10),
+        restaurants: Math.min(4 + d, 10),
+        attractions: Math.min(5 + (d * 2), 15)
+    };
+}
+
+
+/* =========================================================
+   OPENROUTER API - Main Function
+========================================================= */
+
+async function fetchOpenRouterItinerary(origin, destination, days) {
+
+    debugLog(`🚀 Starting OpenRouter API call for ${origin} → ${destination} (${days} days)`);
+
+    if (!CONFIG.OPENROUTER_API_KEY || CONFIG.OPENROUTER_API_KEY === "YOUR_OPENROUTER_API_KEY_HERE") {
+        const errorMsg = 
+            "⚠️ OpenRouter API key ကို သတ်မှတ်ပေးရန် လိုအပ်ပါသည်။\n" +
+            "CONFIG.OPENROUTER_API_KEY ကို သင့် API key ဖြင့် အစားထိုးပါ။\n" +
+            "API key ရယူရန်: https://openrouter.ai/keys";
+        debugLog(errorMsg, 'error');
+        throw new Error(errorMsg);
+    }
+
+    const model = CONFIG.OPENROUTER_MODEL;
+    const apiKey = CONFIG.OPENROUTER_API_KEY;
+    const apiUrl = CONFIG.OPENROUTER_API_URL;
+
+    debugLog(`📡 API URL: ${apiUrl}`);
+    debugLog(`🤖 Model: ${model}`);
+    debugLog(`🔑 API Key: ${apiKey.substring(0, 12)}...`);
+
+    const dynamicCounts = getDynamicCounts(days);
+    const attractionCount = dynamicCounts.attractions;
+    const hotelCount = dynamicCounts.hotels;
+    const restaurantCount = dynamicCounts.restaurants;
+
+    debugLog(`📊 Dynamic counts for ${days} days: ${hotelCount} hotels, ${restaurantCount} restaurants, ${attractionCount} attractions`);
+
+    function getActivitiesPerDay(totalDays) {
+        if (totalDays === 1) return 2;
+        return 3;
+    }
+
+    const activitiesPerDay = getActivitiesPerDay(days);
+    debugLog(`📊 Based on ${days} days: ${activitiesPerDay} places per day`);
+
+    let placesExample = '';
+    if (days === 1) {
+        placesExample = `
+        "places": [
+          "Place 1 name - Location (near each other)",
+          "Place 2 name - Location (near Place 1)"
+        ]`;
+    } else {
+        placesExample = `
+        "places": [
+          "Place 1 name - Location (near hotel)",
+          "Place 2 name - Location (within 5km of Place 1)",
+          "Place 3 name - Location (within 5km of Place 2)"
+        ]`;
+    }
+
+    const prompt = `
+You are a professional Myanmar travel planner with expert knowledge of tourist destinations in Myanmar.
+
+Create a realistic ${days}-day travel itinerary from ${origin} to ${destination}.
+
+=====================================================
+CRITICAL ITINERARY PLANNING RULES:
+=====================================================
+1. **GEOGRAPHIC CLUSTERING IS MANDATORY:**
+   - Each day's places MUST be geographically close to each other (within 5-10 km radius).
+   - Group nearby attractions, hotels, and restaurants on the same day to minimize travel time.
+   - Day 1 should start with places near the hotel/accommodation area.
+   - Arrange days so that each day covers a specific area/zone of the destination.
+   - **DO NOT scatter places randomly across the map.**
+   - Each day should have a logical route: start point → nearby places → end point.
+
+2. **DAY-BY-DAY DISTRIBUTION:**
+   - If ${days} == 1: Each day has 2 places ONLY
+   - If ${days} >= 2: Each day has 3 places per day
+   - Total places = ${days === 1 ? 2 : days * 3} places across all days
+
+3. **ROUTE OPTIMIZATION:**
+   - Places on the same day should be walkable or a short drive apart.
+   - Minimize backtracking and crossing between far-apart zones.
+   - Group places by neighborhood/area (e.g., downtown, riverside, market area).
+
+4. **DAY TITLES:**
+   - Each day's title should include the area/zone name 
+   - Examples: "Day 1: မြို့လယ်ဧရိယာ", "Day 2: အနောက်ဘက်ကမ်း", "Day 3: ဈေးတန်းဧရိယာ"
+
+IMPORTANT RULES:
+1. Return ONLY valid JSON. No Markdown, no code fences.
+2. Use double quotes. No unescaped quotes inside strings.
+3. Return exactly ${days} itinerary objects.
+4. **CRITICAL: Each day must have EXACTLY ${activitiesPerDay} places to visit.**
+5. **For each day, ONLY list the place names with location. NO time, NO opening hours, NO detailed descriptions.**
+6. Use Myanmar language for all names.
+7. Format for each place: "Place Name - Location" (e.g., "ရွှေတိဂုံဘုရား - ရန်ကုန်မြို့")
+
+RECOMMENDATIONS (BASED ON ${days} DAYS TRIP):
+- Attractions: Recommend exactly ${attractionCount} MOST POPULAR places in ${destination} that are currently visited by most tourists.
+  Include a mix of famous pagodas, historical sites, natural attractions, night markets, resorts.
+
+- Hotels: Recommend exactly ${hotelCount} hotels with real names, addresses, ratings, price ranges.
+  **IMPORTANT: For a ${days}-day trip, recommend ${hotelCount} hotels ONLY. Do NOT recommend more.**
+
+- Restaurants: Recommend exactly ${restaurantCount} restaurants with real names, addresses, ratings, cuisine types.
+  **IMPORTANT: For a ${days}-day trip, recommend ${restaurantCount} restaurants ONLY. Include local favorites and popular spots.**
+
+For each attraction and hotel:
+- Include REAL rating from 1 to 5
+- Include review count
+- Keep descriptions concise
+- Use Myanmar language
+
+=====================================================
+COST ESTIMATES (in MMK):
+=====================================================
+- Transport: Based on actual bus/train/plane costs
+- Local transport: Daily city travel
+- Hotel: Based on 3-star to 4-star range
+- Food: Based on local restaurant prices
+
+Return exactly this JSON structure:
+
+{
+  "hotels": [
+    {
+      "name": "Hotel name",
+      "address": "Full address",
+      "rating": 4.5,
+      "review_count": 120,
+      "price_range": "50000-100000 MMK per night",
+      "amenities": "Free WiFi, Parking, Restaurant",
+      "description": "Brief description"
+    }
+  ],
+  "restaurants": [
+    {
+      "name": "Restaurant name",
+      "address": "Full address",
+      "rating": 4.5,
+      "review_count": 150,
+      "cuisine": "မြန်မာစာ / Chinese / Thai",
+      "price_range": "5000-15000 MMK per person",
+      "description": "Brief description"
+    }
+  ],
+  "attractions": [
+    {
+      "name": "Attraction name",
+      "address": "Location/address",
+      "category": "Pagoda/Historical/Nature/Market/Recreation",
+      "rating": 4.5,
+      "review_count": 200,
+      "description": "Brief description"
+    }
+  ],
+  "itinerary": [
+    {
+      "day": 1,
+      "title": "Day 1: Area/Zone name",
+      ${placesExample}
+    }
+  ],
+  "local_tips": ["Tip 1", "Tip 2", "Tip 3"],
+  "packing_suggestions": ["Item 1", "Item 2", "Item 3"],
+  "estimated_transport_cost": "25000-35000 MMK",
+  "local_transport_cost": "10000-15000 MMK",
+  "estimated_hotel_cost": "150000-240000 MMK",
+  "estimated_food_cost": "60000-90000 MMK",
+  "estimated_entry_fees": "10000-20000 MMK",
+  "estimated_total_cost": "255000-400000 MMK"
+}`;
+
+    debugLog(`📝 Prompt built (length: ${prompt.length} chars)`);
+
+    const requestBody = {
+        model: model,
+        messages: [
+            {
+                role: "user",
+                content: prompt
+            }
+        ],
+        temperature: 0.3,
+        top_p: 0.95,
+        max_tokens: 10000,
+        response_format: { type: "json_object" }
+    };
+
+    try {
+
+        debugLog(`🌐 Sending request to OpenRouter API...`);
+
+        const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`,
+                "HTTP-Referer": window.location.origin || "https://smarttrip.local",
+                "X-Title": "SmartTrip Myanmar Travel Planner"
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        const responseText = await response.text();
+
+        debugLog(`📊 Response status: ${response.status} ${response.statusText}`);
+        debugLog(`📄 Raw response length: ${responseText.length} chars`);
+
+        if (!response.ok) {
+            let errorMessage = `OpenRouter API Error (${response.status})`;
+            try {
+                const errorData = JSON.parse(responseText);
+                if (errorData?.error?.message) {
+                    errorMessage = errorData.error.message;
+                } else if (errorData?.error) {
+                    errorMessage = typeof errorData.error === 'string' 
+                        ? errorData.error 
+                        : JSON.stringify(errorData.error);
+                }
+            } catch (e) {
+                console.error("Could not parse OpenRouter error:", e);
+                errorMessage += `: ${responseText.substring(0, 200)}`;
+            }
+            debugLog(`❌ API Error: ${errorMessage}`, 'error');
+            throw new Error(errorMessage);
+        }
+
+        let data;
+        try {
+            data = JSON.parse(responseText);
+            debugLog(`✅ Successfully parsed API response as JSON`, 'success');
+        } catch (e) {
+            debugLog(`❌ Failed to parse API response as JSON`, 'error');
+            throw new Error("OpenRouter returned invalid HTTP JSON.");
+        }
+
+        if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+            debugLog(`❌ No choices in response`, 'error');
+            throw new Error("OpenRouter returned no choices.");
+        }
+
+        const choice = data.choices[0];
+
+        debugLog(`📊 Finish reason: ${choice.finish_reason}`);
+
+        if (choice.finish_reason === "length") {
+            throw new Error("Response was cut off. Please try again with fewer days.");
+        }
+
+        if (choice.finish_reason === "content_filter") {
+            throw new Error("Response was blocked by content filter.");
+        }
+
+        const rawText = choice.message?.content?.trim();
+
+        if (!rawText) {
+            debugLog(`❌ Empty response from OpenRouter`, 'error');
+            throw new Error("OpenRouter returned an empty response.");
+        }
+
+        debugLog(`📄 RAW JSON (first 500 chars): ${rawText.substring(0, 500)}...`);
+
+        const cleaned = cleanGeminiJSON(rawText);
+        debugLog(`📄 Cleaned JSON (first 300 chars): ${cleaned.substring(0, 300)}...`);
+
+        let itineraryData;
+
+        try {
+            itineraryData = JSON.parse(cleaned);
+            debugLog(`✅ Successfully parsed JSON data`, 'success');
+        } catch (error) {
+            debugLog(`❌ JSON parse error: ${error.message}`, 'error');
+            throw new Error("OpenRouter returned invalid itinerary JSON.");
+        }
+
+        validateItinerary(itineraryData, days);
+        debugLog(`✅ Itinerary validation passed`, 'success');
+
+        const expectedPlacesPerDay = getActivitiesPerDay(days);
+        if (Array.isArray(itineraryData.itinerary)) {
+            itineraryData.itinerary.forEach((day, index) => {
+                let places = day.places || day.activities || [];
+                if (!Array.isArray(places)) {
+                    places = [];
+                }
+                
+                const actualCount = places.length;
+                if (actualCount !== expectedPlacesPerDay) {
+                    debugLog(`⚠️ Day ${index + 1} has ${actualCount} places, expected ${expectedPlacesPerDay}. Adjusting...`, 'warn');
+                    
+                    while (places.length < expectedPlacesPerDay) {
+                        places.push(`နေရာ ${places.length + 1} - တည်နေရာ`);
+                    }
+                    if (places.length > expectedPlacesPerDay) {
+                        places = places.slice(0, expectedPlacesPerDay);
+                    }
+                    debugLog(`✅ Day ${index + 1} now has ${places.length} places`, 'success');
+                }
+                
+                day.places = places;
+                delete day.activities;
+            });
+        }
+
+        if (!itineraryData.hotels) itineraryData.hotels = [];
+        if (!itineraryData.restaurants) itineraryData.restaurants = [];
+        if (!itineraryData.attractions) itineraryData.attractions = [];
+        if (!itineraryData.local_tips) itineraryData.local_tips = [];
+        if (!itineraryData.packing_suggestions) itineraryData.packing_suggestions = [];
+
+        itineraryData.hotels = itineraryData.hotels.slice(0, hotelCount);
+        itineraryData.restaurants = itineraryData.restaurants.slice(0, restaurantCount);
+        itineraryData.attractions = itineraryData.attractions.slice(0, attractionCount);
+
+        debugLog(`✅ Final counts: ${itineraryData.attractions.length} attractions, ${itineraryData.hotels.length} hotels, ${itineraryData.restaurants.length} AI restaurants`, 'success');
+        
+        itineraryData._days = days;
+        itineraryData._dynamicCounts = dynamicCounts;
+
+        debugLog(`✅ OpenRouter data processing complete`, 'success');
+        return itineraryData;
+
+    } catch (error) {
+        debugLog(`❌ OpenRouter API error: ${error.message}`, 'error');
+        console.error("❌ OpenRouter API error:", error);
+        throw new Error(`OpenRouter API အသုံးပြုရာတွင် အမှားရှိပါသည်:\n${error.message}`);
+    }
+
+}
+
+
+/* =========================================================
+   HELPER FUNCTIONS
+========================================================= */
+
+function cleanGeminiJSON(text) {
+    let result = String(text || "").trim();
+
+    result = result
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+
+    const first = result.indexOf("{");
+    const last = result.lastIndexOf("}");
+
+    if (first !== -1 && last !== -1 && last > first) {
+        result = result.substring(first, last + 1);
+    }
+
+    return result.trim();
+}
+
+function validateItinerary(data, expectedDays) {
+    if (!data || typeof data !== "object") {
+        throw new Error("Invalid itinerary object.");
+    }
+
+    if (!Array.isArray(data.itinerary)) {
+        throw new Error("Itinerary array is missing.");
+    }
+
+    if (data.itinerary.length !== expectedDays) {
+        console.warn(`Expected ${expectedDays} days, received ${data.itinerary.length}.`);
+    }
+
+    data.itinerary.forEach((day, index) => {
+        if (!day || typeof day !== "object") {
+            throw new Error(`Invalid Day ${index + 1}`);
+        }
+        if (!Array.isArray(day.places) && !Array.isArray(day.activities)) {
+            day.places = [];
+        } else if (Array.isArray(day.activities) && !Array.isArray(day.places)) {
+            day.places = day.activities;
+            delete day.activities;
+        }
+    });
+
+    if (!data.estimated_transport_cost) {
+        data.estimated_transport_cost = "၂၅,၀၀၀ - ၃၅,၀၀၀ ကျပ်";
+    }
+    if (!data.local_transport_cost) {
+        data.local_transport_cost = "၁၀,၀၀၀ - ၁၅,၀၀၀ ကျပ်";
+    }
+    if (!data.estimated_hotel_cost) {
+        data.estimated_hotel_cost = "၁၅၀,၀၀၀ - ၂၄၀,၀၀၀ ကျပ်";
+    }
+    if (!data.estimated_food_cost) {
+        data.estimated_food_cost = "၆၀,၀၀၀ - ၉၀,၀၀၀ ကျပ်";
+    }
+    if (!data.estimated_entry_fees) {
+        data.estimated_entry_fees = "၁၀,၀၀၀ - ၂၀,၀၀၀ ကျပ်";
+    }
+    if (!data.estimated_total_cost) {
+        data.estimated_total_cost = 
+            `${data.estimated_transport_cost} + ${data.local_transport_cost} + ${data.estimated_hotel_cost} + ${data.estimated_food_cost} + ${data.estimated_entry_fees}`;
+    }
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHTML(value) {
+    const div = document.createElement("div");
+    div.textContent = String(value ?? "");
+    return div.innerHTML;
+}
+
+
+/* =========================================================
+   UI
+========================================================= */
+
+function showLoading(show) {
+    if (DOM.loading) {
+        DOM.loading.style.display = show ? "block" : "none";
+    }
+}
+
+function showResults(show) {
+    if (DOM.results) {
+        DOM.results.style.display = show ? "block" : "none";
+    }
+}
+
+function hideError() {
+    if (!DOM.errorBox) return;
+    DOM.errorBox.style.display = "none";
+    DOM.errorBox.textContent = "";
+}
+
+function showError(message) {
+    if (DOM.errorBox) {
+        DOM.errorBox.style.display = "block";
+        DOM.errorBox.textContent = "❌ " + message;
+    } else {
+        alert("❌ " + message);
+    }
+    showResults(false);
+}
+
+function setButtonLoading(loading) {
+    if (!DOM.planBtn) return;
+    DOM.planBtn.disabled = loading;
+    if (loading) {
+        DOM.planBtn.dataset.originalText = DOM.planBtn.innerHTML;
+        DOM.planBtn.innerHTML = "⏳ စီစဉ်နေပါသည်...";
+    } else if (DOM.planBtn.dataset.originalText) {
+        DOM.planBtn.innerHTML = DOM.planBtn.dataset.originalText;
+    }
+}
+
+
+/* =========================================================
+   RENDER FUNCTIONS
+========================================================= */
+
+function renderHotels(hotels) {
+    const list = DOM.hotelList;
+    if (!list) return;
+    list.innerHTML = "";
+
+    const count = document.getElementById("hotelCount");
+    if (count) count.textContent = hotels.length;
+
+    if (hotels.length === 0) {
+        list.innerHTML = `<li class="list-group-item empty-place">🏨 ဟိုတယ်အချက်အလက် မရှိပါ။</li>`;
+        return;
+    }
+
+    hotels.forEach((hotel, index) => {
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+
+        const ratingHTML = hotel.rating ? `
+            <div class="place-rating">
+                ⭐ ${Number(hotel.rating).toFixed(1)} / 5 
+                ${hotel.review_count ? `(${hotel.review_count} reviews)` : ''}
+            </div>
+        ` : '';
+
+        li.innerHTML = `
+            <div class="place-name">
+                ${index + 1}. 🏨 ${escapeHTML(hotel.name || "အမည်မရှိ")}
+            </div>
+            ${ratingHTML}
+            <div class="place-address">
+                📍 ${escapeHTML(hotel.address || "လိပ်စာ မရှိပါ")}
+            </div>
+            ${hotel.price_range ? `
+                <div class="place-distance">
+                    💰 ${escapeHTML(hotel.price_range)}
+                </div>
+            ` : ''}
+            ${hotel.amenities ? `
+                <div class="place-amenities">
+                    🛋️ ${escapeHTML(hotel.amenities)}
+                </div>
+            ` : ''}
+            ${hotel.description ? `
+                <div class="place-description">
+                    ${escapeHTML(hotel.description)}
+                </div>
+            ` : ''}
+        `;
+        list.appendChild(li);
+    });
+}
+
+function renderRestaurants(restaurants) {
+    const list = DOM.restaurantList;
+    if (!list) return;
+    list.innerHTML = "";
+
+    const count = document.getElementById("restaurantCount");
+    if (count) count.textContent = restaurants.length;
+
+    if (!restaurants || restaurants.length === 0) {
+        list.innerHTML = `<li class="list-group-item empty-place">🍲 စားသောက်ဆိုင်အချက်အလက် မရှိပါ။</li>`;
+        return;
+    }
+
+    restaurants.forEach((restaurant, index) => {
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+
+        const isSpecial = restaurant.isSpecial || restaurant._isSpecial;
+
+        let ratingHTML = '';
+        if (restaurant.rating != null) {
+            ratingHTML = `
+                <div class="place-rating">
+                    ⭐ ${Number(restaurant.rating).toFixed(1)} / 5
+                    ${restaurant.reviewCount ? `(${restaurant.reviewCount} reviews)` : ''}
+                </div>
+            `;
+        } else if (restaurant.review_count) {
+            ratingHTML = `
+                <div class="place-rating">
+                    ⭐ ${Number(restaurant.rating || 0).toFixed(1)} / 5
+                    (${restaurant.review_count} reviews)
+                </div>
+            `;
+        } else if (restaurant.reviewCount > 0) {
+            ratingHTML = `
+                <div class="place-rating">
+                    💬 ${restaurant.reviewCount} reviews
+                </div>
+            `;
+        }
+
+        const cuisineHTML = restaurant.cuisine ? `
+            <div class="place-specialty">
+                🍽️ ${escapeHTML(restaurant.cuisine)}
+            </div>
+        ` : '';
+
+        const phoneHTML = restaurant.phone ? `
+            <div class="place-amenities">
+                📞 ${escapeHTML(restaurant.phone)}
+            </div>
+        ` : '';
+
+        const hoursHTML = restaurant.openingHours ? `
+            <div class="place-amenities">
+                🕐 ${escapeHTML(restaurant.openingHours)}
+            </div>
+        ` : '';
+
+        const priceHTML = restaurant.price_range ? `
+            <div class="place-distance">
+                💰 ${escapeHTML(restaurant.price_range)}
+            </div>
+        ` : '';
+
+        const descHTML = restaurant.description ? `
+            <div class="place-description">
+                ${escapeHTML(restaurant.description)}
+            </div>
+        ` : '';
+
+        let mapLinkHTML = '';
+        if (restaurant.lat && restaurant.lng) {
+            const mapLink = `https://www.openstreetmap.org/?mlat=${restaurant.lat}&mlon=${restaurant.lng}#map=18/${restaurant.lat}/${restaurant.lng}`;
+            mapLinkHTML = `
+                <div style="margin-top:6px;">
+                    <a href="${mapLink}" target="_blank" rel="noopener" class="map-link" style="font-size:0.95rem;">
+                        🗺️ OpenStreetMap တွင် ကြည့်ရန်
+                    </a>
+                </div>
+            `;
+        }
+
+        li.innerHTML = `
+            <div class="place-name">
+                ${index + 1}. ${isSpecial ? '⭐' : '🍲'} ${escapeHTML(restaurant.name || "အမည်မရှိ")}
+            </div>
+            ${ratingHTML}
+            <div class="place-address">
+                📍 ${escapeHTML(restaurant.address || "လိပ်စာ မရှိပါ")}
+            </div>
+            ${cuisineHTML}
+            ${priceHTML}
+            ${phoneHTML}
+            ${hoursHTML}
+            ${descHTML}
+            ${mapLinkHTML}
+        `;
+        list.appendChild(li);
+    });
+}
+
+function renderAttractions(attractions) {
+    const list = DOM.attractionList;
+    if (!list) return;
+    list.innerHTML = "";
+
+    const count = document.getElementById("attractionCount");
+    if (count) count.textContent = attractions.length;
+
+    if (attractions.length === 0) {
+        list.innerHTML = `<li class="list-group-item empty-place">🏛️ လည်ပတ်စရာနေရာ မရှိပါ။</li>`;
+        return;
+    }
+
+    const categoryIcons = {
+        'pagoda': '🛕', 'temple': '🛕', 'historical': '🏛️',
+        'nature': '🌿', 'mountain': '⛰️', 'lake': '🏞️',
+        'dam': '🌊', 'market': '🏪', 'night market': '🌙',
+        'recreation': '🎡', 'resort': '🏖️', 'default': '📍'
+    };
+
+    attractions.forEach((attraction, index) => {
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+
+        const category = (attraction.category || '').toLowerCase();
+        let icon = categoryIcons.default;
+        for (const [key, value] of Object.entries(categoryIcons)) {
+            if (category.includes(key)) {
+                icon = value;
+                break;
+            }
+        }
+
+        const ratingHTML = attraction.rating ? `
+            <div class="place-rating">
+                ⭐ ${Number(attraction.rating).toFixed(1)} / 5 
+                ${attraction.review_count ? `(${attraction.review_count} reviews)` : ''}
+            </div>
+        ` : '';
+
+        li.innerHTML = `
+            <div class="place-name">
+                ${index + 1}. ${icon} ${escapeHTML(attraction.name || "အမည်မရှိ")}
+            </div>
+            ${attraction.category ? `
+                <div class="attraction-tag">
+                    ${escapeHTML(attraction.category)}
+                </div>
+            ` : ''}
+            ${ratingHTML}
+            <div class="place-address">
+                📍 ${escapeHTML(attraction.address || "လိပ်စာ မရှိပါ")}
+            </div>
+            ${attraction.entry_fee ? `
+                <div class="place-distance">
+                    🎫 ${escapeHTML(attraction.entry_fee)}
+                </div>
+            ` : ''}
+            ${attraction.description ? `
+                <div class="place-description">
+                    ${escapeHTML(attraction.description)}
+                </div>
+            ` : ''}
+        `;
+        list.appendChild(li);
+    });
+}
+
+function renderItineraryCards(data) {
+    if (!DOM.itineraryContainer) return;
+    DOM.itineraryContainer.innerHTML = "";
+
+    if (!Array.isArray(data.itinerary)) return;
+
+    const placeIcons = ['📍', '🏛️', '🛕', '🌿', '⛰️', '🏞️', '🌊', '🏪', '🌙', '🎡', '🏖️'];
+
+    data.itinerary.forEach((day, index) => {
+        const col = document.createElement("div");
+        col.className = "col-md-4 mb-3";
+
+        const dayNumber = day.day || index + 1;
+        const title = day.title || `နေ့ ${dayNumber}`;
+        
+        let places = day.places || day.activities || [];
+        if (!Array.isArray(places)) {
+            places = [];
+        }
+
+        const placesHTML = places
+            .map((place, idx) => {
+                const icon = placeIcons[idx % placeIcons.length];
+                return `
+                    <li>
+                        <span class="place-icon">${icon}</span>
+                        ${escapeHTML(place)}
+                    </li>
+                `;
+            })
+            .join("");
+
+        col.innerHTML = `
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white fw-bold" style="font-size:1.2rem !important;">
+                    📅 Day ${escapeHTML(dayNumber)}
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-3 fw-bold">${escapeHTML(title)}</h6>
+                    <ul class="itinerary-places">
+                        ${placesHTML || '<li style="color:#6c757d; font-size:1.1rem !important;">နေရာများ မရှိပါ</li>'}
+                    </ul>
+                </div>
+            </div>
+        `;
+        DOM.itineraryContainer.appendChild(col);
+    });
+}
+
+function renderSimpleList(elementId, items) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    element.innerHTML = "";
+
+    if (!Array.isArray(items)) return;
+
+    items.forEach(item => {
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+        li.style.fontSize = "1.1rem";
+        li.style.fontWeight = "500";
+        li.textContent = String(item);
+        element.appendChild(li);
+    });
+}
+
+
+/* =========================================================
+   POPULATE RESULTS
+========================================================= */
+
+function populateResults(data) {
+    renderItineraryCards(data);
+
+    // =====================================================
+    // SPECIAL ATTRACTIONS - ပြည်မြို့အတွက်သာ ထည့်ခြင်း
+    // AI မှ ရရှိသော attraction များ၏ နောက်ဆုံးတွင် ထည့်ရန်
+    // =====================================================
+    const destination = DOM.destInput?.value?.trim() || "";
+    const specialAttractions = getSpecialAttractions(destination);
+
+    let allAttractions = data.attractions || [];
+
+    if (specialAttractions.length > 0) {
+        debugLog(`⭐ Appending ${specialAttractions.length} special attractions for "${destination}" at the end`, 'success');
+
+        // ရှိပြီးသား attraction နာမည်များနှင့် ထပ်မတူအောင် စစ်ဆေး
+        const existingNames = new Set(
+            allAttractions.map(a => (a.name || "").toLowerCase().trim())
+        );
+
+        // AI attractions များ၏ နောက်ဆုံးတွင် ထည့်ရန်
+        specialAttractions.forEach(sa => {
+            const key = (sa.name || "").toLowerCase().trim();
+            if (!existingNames.has(key)) {
+                allAttractions.push(sa); // push အသုံးပြု၍ နောက်ဆုံးတွင် ထည့်ခြင်း
+                existingNames.add(key);
+            }
+        });
+    } else {
+        debugLog(`ℹ️ No special attractions for "${destination}"`, 'info');
+    }
+
+    renderHotels(data.hotels || []);
+    renderAttractions(allAttractions);
+    renderSimpleList("tipsList", data.local_tips || []);
+    renderSimpleList("packingList", data.packing_suggestions || []);
+    
+    // AI မှ ရရှိသော restaurants များကို ချက်ချင်း render
+    if (data.restaurants && data.restaurants.length > 0) {
+        renderRestaurants(data.restaurants);
+    }
+}
+
+
+/* =========================================================
+   OSRM ROUTE (Driving)
+========================================================= */
+
+async function fetchOSRMRoute(originCoord, destinationCoord) {
+    try {
+        const coords =
+            `${originCoord.lng},${originCoord.lat};` +
+            `${destinationCoord.lng},${destinationCoord.lat}`;
+
+        const url =
+            `https://router.project-osrm.org/route/v1/driving/${coords}` +
+            `?overview=full&geometries=geojson&steps=false`;
+
+        debugLog(`🛣️ Fetching OSRM driving route...`);
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`OSRM HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.code !== "Ok" || !Array.isArray(data.routes) || data.routes.length === 0) {
+            throw new Error("OSRM returned no route.");
+        }
+
+        const route = data.routes[0];
+
+        return {
+            distanceMeters: route.distance,
+            durationSeconds: route.duration,
+            geometry: route.geometry
+        };
+
+    } catch (error) {
+        debugLog(`⚠️ OSRM error: ${error.message}`, 'error');
+        return null;
+    }
+}
+
+
+/* =========================================================
+   OPENSTREETMAP RESTAURANTS (Overpass API)
+========================================================= */
+
+async function fetchOSMRestaurants(destinationCoord, radiusMeters = 15000) {
+    if (!destinationCoord) {
+        debugLog('❌ No destination coordinate for restaurant search', 'error');
+        return [];
+    }
+
+    debugLog(`🍲 Fetching restaurants from OpenStreetMap (radius: ${radiusMeters/1000}km)...`);
+
+    const { lat, lng } = destinationCoord;
+
+    const query = `
+        [out:json][timeout:25];
+        (
+          node["amenity"="restaurant"](around:${radiusMeters},${lat},${lng});
+          way["amenity"="restaurant"](around:${radiusMeters},${lat},${lng});
+          node["amenity"="cafe"](around:${radiusMeters},${lat},${lng});
+          way["amenity"="cafe"](around:${radiusMeters},${lat},${lng});
+          node["amenity"="fast_food"](around:${radiusMeters},${lat},${lng});
+          way["amenity"="fast_food"](around:${radiusMeters},${lat},${lng});
+        );
+        out center tags;
+    `;
+
+    const overpassEndpoints = [
+        'https://overpass-api.de/api/interpreter',
+        'https://overpass.kumi.systems/api/interpreter',
+        'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+    ];
+
+    let data = null;
+
+    for (const endpoint of overpassEndpoints) {
+        try {
+            debugLog(`🌐 Trying Overpass endpoint: ${endpoint}`);
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'data=' + encodeURIComponent(query)
+            });
+
+            if (!response.ok) {
+                debugLog(`⚠️ Endpoint returned ${response.status}`, 'warn');
+                continue;
+            }
+
+            data = await response.json();
+            debugLog(`✅ Got response from ${endpoint}`, 'success');
+            break;
+        } catch (err) {
+            debugLog(`⚠️ Endpoint failed: ${err.message}`, 'warn');
+        }
+    }
+
+    if (!data || !Array.isArray(data.elements)) {
+        debugLog('❌ No restaurant data from Overpass API', 'error');
+        return [];
+    }
+
+    debugLog(`📊 Raw OSM elements: ${data.elements.length}`);
+
+    const restaurants = data.elements
+        .map(el => {
+            const tags = el.tags || {};
+            const name = tags.name || tags['name:en'] || tags['name:my'] || '';
+
+            if (!name) return null;
+
+            const lat = el.lat || (el.center && el.center.lat);
+            const lng = el.lon || (el.center && el.center.lon);
+
+            if (!lat || !lng) return null;
+
+            let rating = null;
+            if (tags.rating) {
+                const parsed = parseFloat(tags.rating);
+                if (!isNaN(parsed) && parsed > 0) {
+                    rating = parsed > 5 ? parsed / 2 : parsed;
+                }
+            }
+
+            let reviewCount = 0;
+            if (tags['review:count']) {
+                reviewCount = parseInt(tags['review:count'], 10) || 0;
+            } else if (tags['reviews']) {
+                reviewCount = parseInt(tags['reviews'], 10) || 0;
+            }
+
+            const addressParts = [
+                tags['addr:housenumber'],
+                tags['addr:street'],
+                tags['addr:suburb'] || tags['addr:quarter'],
+                tags['addr:city'] || tags['addr:town']
+            ].filter(Boolean);
+
+            const address = addressParts.length > 0
+                ? addressParts.join(', ')
+                : (tags['addr:full'] || 'မြို့အတွင်း');
+
+            const cuisine = tags.cuisine
+                ? tags.cuisine.split(';').map(c => c.trim()).join(', ')
+                : '';
+
+            const phone = tags.phone || tags['contact:phone'] || '';
+
+            const openingHours = tags.opening_hours || '';
+
+            const website = tags.website || tags['contact:website'] || '';
+
+            return {
+                name,
+                address,
+                rating,
+                reviewCount,
+                cuisine,
+                phone,
+                openingHours,
+                website,
+                lat,
+                lng,
+                osmType: el.type,
+                osmId: el.id
+            };
+        })
+        .filter(Boolean);
+
+    debugLog(`📊 Cleaned restaurants: ${restaurants.length}`);
+
+    return restaurants;
+}
+
+
+/* =========================================================
+   SCORE & SORT RESTAURANTS
+========================================================= */
+
+function scoreAndSortRestaurants(restaurants, limit = 8) {
+    if (!Array.isArray(restaurants) || restaurants.length === 0) {
+        return [];
+    }
+
+    const scored = restaurants.map(r => {
+        let score = 0;
+
+        if (r.rating != null) {
+            score += r.rating * 20;
+        } else {
+            score += 10;
+        }
+
+        if (r.reviewCount > 0) {
+            score += Math.min(r.reviewCount, 500) / 10;
+        }
+
+        if (r.name && r.name.length > 2) {
+            score += 15;
+        }
+
+        if (r.address && r.address.length > 3) {
+            score += 10;
+        }
+
+        if (r.cuisine) {
+            score += 8;
+        }
+
+        if (r.phone) {
+            score += 5;
+        }
+
+        if (r.openingHours) {
+            score += 5;
+        }
+
+        if (r.website) {
+            score += 3;
+        }
+
+        return { ...r, _score: score };
+    });
+
+    scored.sort((a, b) => b._score - a._score);
+
+    const seen = new Set();
+    const unique = [];
+
+    for (const r of scored) {
+        const key = r.name.toLowerCase().trim();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        unique.push(r);
+        if (unique.length >= limit) break;
+    }
+
+    debugLog(`✅ Selected top ${unique.length} restaurants`, 'success');
+
+    return unique;
+}
+
+
+/* =========================================================
+   SPECIAL RESTAURANTS HELPER
+========================================================= */
+
+function getSpecialRestaurants(destination) {
+    if (!destination || !CONFIG.SPECIAL_RESTAURANTS) {
+        return [];
+    }
+
+    const destKey = destination.trim();
+    const destLower = destKey.toLowerCase();
+
+    if (CONFIG.SPECIAL_RESTAURANTS[destKey]) {
+        return CONFIG.SPECIAL_RESTAURANTS[destKey].map(r => ({
+            ...r,
+            _isSpecial: true
+        }));
+    }
+
+    for (const key of Object.keys(CONFIG.SPECIAL_RESTAURANTS)) {
+        if (key.toLowerCase() === destLower) {
+            return CONFIG.SPECIAL_RESTAURANTS[key].map(r => ({
+                ...r,
+                _isSpecial: true
+            }));
+        }
+    }
+
+    for (const key of Object.keys(CONFIG.SPECIAL_RESTAURANTS)) {
+        if (destKey.includes(key) || key.includes(destKey)) {
+            debugLog(`⭐ Partial match found: "${destKey}" → "${key}"`, 'info');
+            return CONFIG.SPECIAL_RESTAURANTS[key].map(r => ({
+                ...r,
+                _isSpecial: true
+            }));
+        }
+    }
+
+    return [];
+}
+
+
+/* =========================================================
+   SPECIAL ATTRACTIONS HELPER
+========================================================= */
+
+/**
+ * သွားမည့်မြို့အတွက် special attractions များ ရှာဖွေခြင်း
+ * (ပြည် / pyay / Pyay အတွက်သာ ဟံသာဂီရိ နှင့် ဥဿဖတောင် ရမည်)
+ * အခြားမြို့များအတွက် empty array ပြန်ပေးမည်
+ */
+function getSpecialAttractions(destination) {
+    if (!destination || !CONFIG.SPECIAL_ATTRACTIONS) {
+        return [];
+    }
+
+    const destKey = destination.trim();
+    const destLower = destKey.toLowerCase();
+
+    // တိုက်ရိုက် key ရှာမယ်
+    if (CONFIG.SPECIAL_ATTRACTIONS[destKey]) {
+        return CONFIG.SPECIAL_ATTRACTIONS[destKey].map(a => ({
+            ...a,
+            _isSpecial: true
+        }));
+    }
+
+    // Case-insensitive ရှာမယ်
+    for (const key of Object.keys(CONFIG.SPECIAL_ATTRACTIONS)) {
+        if (key.toLowerCase() === destLower) {
+            return CONFIG.SPECIAL_ATTRACTIONS[key].map(a => ({
+                ...a,
+                _isSpecial: true
+            }));
+        }
+    }
+
+    // Partial match (ဥပမာ - "ပြည်မြို့" ထည့်လျှင် "ပြည်" နှင့် match ဖြစ်ရန်)
+    for (const key of Object.keys(CONFIG.SPECIAL_ATTRACTIONS)) {
+        if (destKey.includes(key) || key.includes(destKey)) {
+            debugLog(`⭐ Partial match found for attractions: "${destKey}" → "${key}"`, 'info');
+            return CONFIG.SPECIAL_ATTRACTIONS[key].map(a => ({
+                ...a,
+                _isSpecial: true
+            }));
+        }
+    }
+
+    return [];
+}
+
+
+/* =========================================================
+   TRAIN ROUTE FUNCTIONS
+========================================================= */
+
+function findNearestStation(coord) {
+    if (!coord) return null;
+
+    let nearest = null;
+    let minDistance = Infinity;
+
+    MYANMAR_RAILWAY_STATIONS.forEach(station => {
+        const R = 6371;
+        const dLat = (station.lat - coord.lat) * Math.PI / 180;
+        const dLng = (station.lng - coord.lng) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(coord.lat * Math.PI / 180) *
+            Math.cos(station.lat * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearest = { ...station, distanceFromCoord: distance };
+        }
+    });
+
+    return nearest;
+}
+
+function buildTrainRoute(originCoord, destCoord) {
+    debugLog(`🚆 Building train route...`);
+
+    const originStation = findNearestStation(originCoord);
+    const destStation = findNearestStation(destCoord);
+
+    if (!originStation || !destStation) {
+        debugLog(`❌ Cannot find nearest stations`, 'error');
+        return null;
+    }
+
+    debugLog(`🚉 Origin station: ${originStation.name} (${originStation.distanceFromCoord.toFixed(1)} km away)`);
+    debugLog(`🚉 Destination station: ${destStation.name} (${destStation.distanceFromCoord.toFixed(1)} km away)`);
+
+    const originIdx = MYANMAR_RAILWAY_STATIONS.findIndex(s => s.name === originStation.name);
+    const destIdx = MYANMAR_RAILWAY_STATIONS.findIndex(s => s.name === destStation.name);
+
+    let routeStations = [];
+
+    if (originIdx !== -1 && destIdx !== -1) {
+        const start = Math.min(originIdx, destIdx);
+        const end = Math.max(originIdx, destIdx);
+        routeStations = MYANMAR_RAILWAY_STATIONS.slice(start, end + 1);
+    }
+
+    if (routeStations.length < 2) {
+        routeStations = [originStation, destStation];
+    }
+
+    let totalDistance = 0;
+    for (let i = 0; i < routeStations.length - 1; i++) {
+        const s1 = routeStations[i];
+        const s2 = routeStations[i + 1];
+        const R = 6371;
+        const dLat = (s2.lat - s1.lat) * Math.PI / 180;
+        const dLng = (s2.lng - s1.lng) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(s1.lat * Math.PI / 180) *
+            Math.cos(s2.lat * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        totalDistance += R * c;
+    }
+
+    const travelHours = totalDistance / CONFIG.TRAIN_AVG_SPEED_KMH;
+    const stopHours = (routeStations.length - 2) * CONFIG.TRAIN_STOP_MINUTES / 60;
+    const totalHours = travelHours + stopHours;
+
+    const coordinates = routeStations.map(s => [s.lng, s.lat]);
+
+    const geometry = {
+        type: "LineString",
+        coordinates: coordinates
+    };
+
+    debugLog(`✅ Train route: ${routeStations.length} stations, ${totalDistance.toFixed(1)} km, ${totalHours.toFixed(1)} hours`, 'success');
+
+    return {
+        distanceMeters: totalDistance * 1000,
+        durationSeconds: totalHours * 3600,
+        geometry: geometry,
+        stations: routeStations,
+        originStation: originStation,
+        destinationStation: destStation
+    };
+}
+
+
+/* =========================================================
+   FORMAT FUNCTIONS
+========================================================= */
+
+function formatDistance(meters) {
+    if (meters == null) return "--";
+    const km = meters / 1000;
+    if (km < 1) {
+        return `${Math.round(meters)} မီတာ`;
+    }
+    return `${km.toFixed(1)} ကီလိုမီတာ`;
+}
+
+function formatDuration(seconds) {
+    if (seconds == null) return "--";
+    const totalMinutes = Math.round(seconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours <= 0) {
+        return `${minutes} မိနစ်`;
+    }
+    if (minutes === 0) {
+        return `${hours} နာရီ`;
+    }
+    return `${hours} နာရီ ${minutes} မိနစ်`;
+}
+
+
+/* =========================================================
+   RENDER ROUTE INFO (ကား + ရထား ၂ မျိုးလုံး)
+========================================================= */
+
+function renderRouteInfo(carRoute, trainRoute, origin, destination) {
+    const section = DOM.routeInfoSection;
+    if (!section) return;
+
+    if (!carRoute && !trainRoute) {
+        section.style.display = "none";
+        return;
+    }
+
+    section.style.display = "block";
+
+    if (DOM.routeCarInfo) {
+        if (carRoute) {
+            DOM.routeCarInfo.textContent =
+                `${formatDistance(carRoute.distanceMeters)}`;
+        } else {
+            DOM.routeCarInfo.textContent = "မရရှိပါ";
+        }
+    }
+
+    if (DOM.routeTrainInfo) {
+        if (trainRoute) {
+            DOM.routeTrainInfo.textContent =
+                `${formatDistance(trainRoute.distanceMeters)}`;
+        } else {
+            DOM.routeTrainInfo.textContent = "မရရှိပါ";
+        }
+    }
+
+    if (DOM.routePath) {
+        DOM.routePath.textContent = `${origin} → ${destination}`;
+    }
+}
+
+
+/* =========================================================
+   MAP LEGEND
+========================================================= */
+
+function addMapLegend(map) {
+    const legend = L.control({ position: "bottomright" });
+
+    legend.onAdd = function () {
+        const div = L.DomUtil.create("div", "map-legend");
+        div.innerHTML = `
+            <div>
+                <span class="legend-line" style="background:#0d6efd;"></span>
+                🚗 ကားလမ်းကြောင်း
+            </div>
+            <div>
+                <span class="legend-line" style="background:#fd7e14;"></span>
+                🚆 ရထားလမ်းကြောင်း
+            </div>
+           
+        `;
+        return div;
+    };
+
+    legend.addTo(map);
+}
+
+
+/* =========================================================
+   POPULATE MAP (ကား + ရထား + စားသောက်ဆိုင် ၃ မျိုးလုံး)
+========================================================= */
+
+async function populateMap(origin, destination, days) {
+    if (mapInstance) {
+        try { mapInstance.remove(); } catch (e) { console.warn(e); }
+        mapInstance = null;
+    }
+
+    const mapElement = document.getElementById("map");
+    if (!mapElement) return;
+
+    renderRouteInfo(null, null);
+
+    async function geocode(place) {
+        try {
+            const url =
+                "https://nominatim.openstreetmap.org/search" +
+                "?format=json&q=" + encodeURIComponent(place + ", Myanmar") + "&limit=1";
+            const response = await fetch(url);
+            if (!response.ok) return null;
+            const data = await response.json();
+            if (Array.isArray(data) && data.length > 0) {
+                return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+            }
+            return null;
+        } catch (error) {
+            console.warn("Geocoding error:", error);
+            return null;
+        }
+    }
+
+    const originCoord = await geocode(origin);
+    const destinationCoord = await geocode(destination);
+
+    let centerLat = 16.8661;
+    let centerLng = 96.1951;
+    if (destinationCoord) {
+        centerLat = destinationCoord.lat;
+        centerLng = destinationCoord.lng;
+    }
+
+    mapInstance = L.map("map", {
+        center: [centerLat, centerLng],
+        zoom: 8
+    });
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { attribution: "&copy; OpenStreetMap contributors" }
+    ).addTo(mapInstance);
+
+    if (originCoord) {
+        L.marker([originCoord.lat, originCoord.lng])
+            .addTo(mapInstance)
+            .bindPopup("📍 " + escapeHTML(origin));
+    }
+
+    if (destinationCoord) {
+        L.marker([destinationCoord.lat, destinationCoord.lng])
+            .addTo(mapInstance)
+            .bindPopup("📍 " + escapeHTML(destination))
+            .openPopup();
+    }
+
+    if (!originCoord || !destinationCoord) {
+        setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 300);
+        return;
+    }
+
+    // =====================================================
+    // ၁။ ကားလမ်းကြောင်း (OSRM) — အပြာရောင်
+    // =====================================================
+    debugLog(`🚗 Calculating OSRM driving route ${origin} → ${destination}...`);
+    const carRoute = await fetchOSRMRoute(originCoord, destinationCoord);
+
+    if (carRoute) {
+        const carLine = L.geoJSON(carRoute.geometry, {
+            style: { color: "#0d6efd", weight: 5, opacity: 0.75 }
+        }).addTo(mapInstance);
+
+        carLine.bindPopup(
+            `🚗 <b>${escapeHTML(origin)} → ${escapeHTML(destination)}</b><br>` +
+            `📏 ${formatDistance(carRoute.distanceMeters)}<br>` +
+            `⏱️ ${formatDuration(carRoute.durationSeconds)}`
+        );
+
+        debugLog(
+            `✅ Car route: ${formatDistance(carRoute.distanceMeters)} / ${formatDuration(carRoute.durationSeconds)}`,
+            'success'
+        );
+    } else {
+        debugLog(`⚠️ Could not fetch car route.`, 'warn');
+    }
+
+    // =====================================================
+    // ၂။ ရထားလမ်းကြောင်း — လိမ္မော်ရောင် dashed
+    // =====================================================
+    debugLog(`🚆 Calculating train route ${origin} → ${destination}...`);
+    const trainRoute = buildTrainRoute(originCoord, destinationCoord);
+
+    if (trainRoute) {
+        const trainLine = L.geoJSON(trainRoute.geometry, {
+            style: {
+                color: "#fd7e14",
+                weight: 5,
+                opacity: 0.85,
+                dashArray: "10, 10"
+            }
+        }).addTo(mapInstance);
+
+        trainLine.bindPopup(
+            `🚆 <b>${escapeHTML(origin)} → ${escapeHTML(destination)}</b><br>` +
+            `📏 ${formatDistance(trainRoute.distanceMeters)}<br>` +
+            `⏱️ ${formatDuration(trainRoute.durationSeconds)}<br>` +
+            `🚉 ဘူတာ ${trainRoute.stations.length} ခု`
+        );
+
+        trainRoute.stations.forEach(station => {
+            L.circleMarker([station.lat, station.lng], {
+                radius: 5,
+                fillColor: '#fd7e14',
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
+            })
+            .addTo(mapInstance)
+            .bindPopup(`🚉 ${escapeHTML(station.name)}`);
+        });
+
+        debugLog(
+            `✅ Train route: ${formatDistance(trainRoute.distanceMeters)} / ${formatDuration(trainRoute.durationSeconds)} (${trainRoute.stations.length} stations)`,
+            'success'
+        );
+    } else {
+        debugLog(`⚠️ Could not build train route.`, 'warn');
+    }
+
+    // =====================================================
+    // ၃။ OpenStreetMap မှ စားသောက်ဆိုင်များ
+    // =====================================================
+    debugLog(`🍲 Fetching restaurants from OpenStreetMap...`);
+
+    const destWithName = { ...destinationCoord, name: destination };
+    const allRestaurants = await fetchOSMRestaurants(
+        destWithName,
+        CONFIG.RESTAURANT_SEARCH_RADIUS_M
+    );
+
+    // =====================================================
+    // ၃.၁။ အထူး စားသောက်ဆိုင်များ ထည့်ခြင်း (ပြည်မြို့အတွက်)
+    // =====================================================
+    debugLog(`⭐ Checking for special restaurants for "${destination}"...`);
+    const specialRestaurants = getSpecialRestaurants(destination);
+
+    if (specialRestaurants.length > 0) {
+        debugLog(`⭐ Found ${specialRestaurants.length} special restaurants for ${destination}`, 'success');
+    } else {
+        debugLog(`ℹ️ No special restaurants configured for "${destination}"`, 'info');
+    }
+
+    const combinedRestaurants = [...specialRestaurants, ...allRestaurants];
+
+    debugLog(`📊 Total combined restaurants: ${combinedRestaurants.length} (${specialRestaurants.length} special + ${allRestaurants.length} OSM)`);
+
+    const dynamicCounts = getDynamicCounts(days || 3);
+    const restaurantLimit = dynamicCounts.restaurants;
+
+    debugLog(`📊 Dynamic restaurant limit for ${days} days: ${restaurantLimit}`);
+
+    const scoredRestaurants = scoreAndSortRestaurants(
+        combinedRestaurants,
+        restaurantLimit
+    );
+
+    const finalRestaurants = [];
+    const seenNames = new Set();
+
+    specialRestaurants.forEach(r => {
+        const key = r.name.toLowerCase().trim();
+        if (!seenNames.has(key)) {
+            seenNames.add(key);
+            finalRestaurants.push(r);
+        }
+    });
+
+    debugLog(`✅ Added ${finalRestaurants.length} special restaurants first`);
+
+    scoredRestaurants.forEach(r => {
+        if (finalRestaurants.length >= restaurantLimit) return;
+        const key = r.name.toLowerCase().trim();
+        if (!seenNames.has(key)) {
+            seenNames.add(key);
+            finalRestaurants.push(r);
+        }
+    });
+
+    debugLog(`✅ Final restaurant list: ${finalRestaurants.length} (limit: ${restaurantLimit})`, 'success');
+
+    // =====================================================
+    // ၄။ မြေပုံပေါ်တွင် restaurant markers ထည့်ခြင်း
+    // =====================================================
+    finalRestaurants.forEach((r, idx) => {
+        const isSpecial = r.isSpecial || r._isSpecial;
+
+        const marker = L.circleMarker([r.lat, r.lng], {
+            radius: isSpecial ? 9 : 7,
+            fillColor: isSpecial ? '#dc3545' : '#198754',
+            color: '#fff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+        })
+        .addTo(mapInstance)
+        .bindPopup(
+            `${isSpecial ? '⭐' : '🍲'} <b>${escapeHTML(r.name)}</b><br>` +
+            (r.rating != null ? `⭐ ${Number(r.rating).toFixed(1)}<br>` : '') +
+            (r.cuisine ? `🍽️ ${escapeHTML(r.cuisine)}<br>` : '') +
+            `📍 ${escapeHTML(r.address)}`
+        );
+
+        marker.bindTooltip(
+            `${idx + 1}. ${r.name}${isSpecial ? ' ⭐' : ''}`,
+            { direction: 'top' }
+        );
+    });
+
+    renderRestaurants(finalRestaurants);
+
+    debugLog(`✅ Rendered ${finalRestaurants.length} restaurants on map & list`, 'success');
+
+    renderRouteInfo(carRoute, trainRoute, origin, destination);
+
+    addMapLegend(mapInstance);
+
+    const bounds = L.latLngBounds(
+        [originCoord.lat, originCoord.lng],
+        [destinationCoord.lat, destinationCoord.lng]
+    );
+    mapInstance.fitBounds(bounds, { padding: [50, 50] });
+
+    setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 300);
+}
+
+
+/* =========================================================
+   MAIN PLAN TRIP
+========================================================= */
+
+async function planTrip(event) {
+    if (event) event.preventDefault();
+
+    clearDebugLogs();
+    debugLog('🔄 Starting trip planning...', 'info');
+
+    const origin = DOM.originInput?.value?.trim() || "";
+    const destination = DOM.destInput?.value?.trim() || "";
+    const days = parseInt(DOM.daysInput?.value, 10) || CONFIG.DEFAULT_DAYS;
+
+    if (!origin) {
+        const msg = "ကျေးဇူးပြု၍ ထွက်မည့်မြို့ကို ထည့်ပါ။";
+        debugLog(`❌ ${msg}`, 'error');
+        alert(msg);
+        DOM.originInput?.focus();
+        return;
+    }
+
+    if (!destination) {
+        const msg = "ကျေးဇူးပြု၍ သွားမည့်မြို့ကို ထည့်ပါ။";
+        debugLog(`❌ ${msg}`, 'error');
+        alert(msg);
+        DOM.destInput?.focus();
+        return;
+    }
+
+    if (days < 1 || days > CONFIG.MAX_DAYS) {
+        const msg = `ရက်အရေအတွက်သည် ၁ မှ ${CONFIG.MAX_DAYS} အတွင်း ဖြစ်ရမည်။`;
+        debugLog(`❌ ${msg}`, 'error');
+        alert(msg);
+        return;
+    }
+
+    debugLog(`📋 Trip: ${origin} → ${destination} (${days} days)`, 'info');
+
+    hideError();
+    showLoading(true);
+    showResults(false);
+    setButtonLoading(true);
+
+    try {
+        debugLog(`🤖 Calling OpenRouter API...`, 'info');
+        const itineraryData = await fetchOpenRouterItinerary(origin, destination, days);
+
+        if (!itineraryData) throw new Error("OpenRouter မှ ခရီးစဉ်အချက်အလက် မရရှိပါ။");
+
+        populateResults(itineraryData);
+        await populateMap(origin, destination, days);
+        showResults(true);
+        debugLog('✅ Trip planning completed successfully!', 'success');
+
+    } catch (error) {
+        debugLog(`❌ SmartTrip error: ${error.message}`, 'error');
+        console.error("❌ SmartTrip error:", error);
+        showError(error.message || "ခရီးစဉ်စီစဉ်ရာတွင် အမှားရှိပါသည်။");
+    } finally {
+        setButtonLoading(false);
+        showLoading(false);
+    }
+}
+
+
+/* =========================================================
+   EVENT LISTENERS
+========================================================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("✅ SmartTrip Planner loaded (OpenRouter + OSRM + Train + OSM Restaurants + Special Restaurants + Special Attractions + Dynamic Counts).");
+
+    if (DOM.toggleDebugBtn && DOM.debugConsole) {
+        DOM.toggleDebugBtn.addEventListener('click', () => {
+            const isVisible = DOM.debugConsole.style.display !== 'none';
+            DOM.debugConsole.style.display = isVisible ? 'none' : 'block';
+            DOM.toggleDebugBtn.textContent = isVisible ? '🐛 Show Debug Console' : '🐛 Hide Debug Console';
+        });
+    }
+
+    if (DOM.planBtn) {
+        DOM.planBtn.addEventListener("click", planTrip);
+    }
+
+    document.addEventListener("keydown", event => {
+        if (event.key !== "Enter") return;
+        const active = document.activeElement;
+        if (!active) return;
+        const allowed = ["originInput", "destInput", "daysInput"];
+        if (allowed.includes(active.id)) {
+            event.preventDefault();
+            planTrip(event);
+        }
+    });
+});
+
+</script>
+
+{% endblock %}

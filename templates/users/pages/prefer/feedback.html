@@ -1,0 +1,88 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - User Feedback & Reports{% endblock %}
+
+{% block content %}
+
+<div x-data="{ show: false, message: '', type: 'success' }" @feedback-alert.window="
+        show = true;
+        message = $event.detail.msg;
+        type = $event.detail.type;
+        setTimeout(() => show = false, 4000)
+    " x-show="show" x-transition class="alert rounded-3 fw-medium shadow-sm" 
+    :class="type === 'success' ? 'alert-success' : 'alert-danger'"
+    style="position: fixed; top: 80px; right: 24px; z-index: 9999; min-width: 300px;" 
+    role="alert">
+    <span x-text="message"></span>
+</div>
+
+<div class="container my-2" >
+
+    <div class="mb-4">
+        <h2 class="fw-bold text-dark">Send Feedback & Reports</h2>
+        <p class="text-muted">Help us improve SmartTrip by sharing suggestions, reporting issues, or notifying us of bugs.</p>
+    </div>
+
+    <div class="card card-custom border-0 shadow-sm mb-5">
+        <div class="card-body p-4 p-md-5">
+            <h4 class="fw-bold mb-3 text-dark">Create New Feedback Ticket</h4>
+
+            <form @submit.prevent="
+                let formData = {
+                    feedback_type: document.getElementById('feedback_type').value,
+                    subject: document.getElementById('subject').value,
+                    message: document.getElementById('message').value
+                };
+
+                fetch('/api/user/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        window.dispatchEvent(new CustomEvent('feedback-alert', { detail: { msg: 'Feedback submitted successfully. Thank you!', type: 'success' } }));
+                        $el.reset();
+                    } else {
+                        window.dispatchEvent(new CustomEvent('feedback-alert', { detail: { msg: data.message || 'Error submitting feedback.', type: 'danger' } }));
+                    }
+                })
+                .catch(err => {
+                    window.dispatchEvent(new CustomEvent('feedback-alert', { detail: { msg: 'Network or server error occurred.', type: 'danger' } }));
+                })
+            ">
+                <div class="row g-3">
+                    
+                    <div class="col-md-6">
+                        <label for="feedback_type" class="form-label fw-semibold text-secondary small">Feedback Type</label>
+                       <select id="feedback_type" class="form-select form-control-custom" required>
+                            <option value="" disabled selected>Select feedback category...</option>
+                            <option value="suggestion">💡 Suggestion / Feature Request</option>
+                            <option value="report">🚨 General Report</option>
+                            <option value="bug">🐛 Bug / Technical Issue</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="subject" class="form-label fw-semibold text-secondary small">Subject</label>
+                        <input type="text" id="subject" name="subject" placeholder="e.g. Map marker glitch on explore page" required class="form-control form-control-custom">
+                    </div>
+
+                    <div class="col-12">
+                        <label for="message" class="form-label fw-semibold text-secondary small">Description / Details</label>
+                        <textarea id="message" name="message" rows="12" placeholder="Please provide details so we can understand or replicate the issue..." required class="form-control form-control-custom"></textarea>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end pt-4 mt-3 border-top">
+                    <button type="submit" class="btn btn-gold px-4 py-2 rounded-3 shadow-sm">
+                        Submit Feedback
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

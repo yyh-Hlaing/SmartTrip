@@ -1,0 +1,199 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Explore Places{% endblock %}
+
+{% block content %}
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+
+    <div class="mb-4">
+        <h2 class="fw-bold text-dark">Explore Destinations</h2>
+        <p class="text-muted">Discover top-rated sights, featured hotspots, and incredible destinations worldwide.</p>
+    </div>
+
+    <div id="placesCarousel" class="carousel slide mb-5 shadow-sm rounded-4 overflow-hidden" data-bs-ride="carousel">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#placesCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <button type="button" data-bs-target="#placesCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+            <button type="button" data-bs-target="#placesCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        </div>
+        <div class="carousel-inner" style="height: 400px;">
+            <div class="carousel-item active h-100">
+                <img src="https://www.gomyanmartours.com/wp-content/uploads/2023/10/8-surprising-facts-about-shwedagon-pagoda-1694618611-1.jpg" class="d-block w-100 h-100 object-fit-cover" alt="Paris Featured">
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 backdrop-blur">
+                    <h3 class="fw-bold text-white">Myanmar</h3>
+                    <p class="text-light mb-0">Experience the city of lights, culture, and timeless architecture.</p>
+                </div>
+            </div>
+            <div class="carousel-item h-100">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR4i3841ntJZj98RKcS0iUITh0rzEMA-BwMVZbRHgRbvBC2w_WYDGQGOoI&s=10" class="d-block w-100 h-100 object-fit-cover" alt="Tokyo Featured">
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3">
+                    <h3 class="fw-bold text-white">Bagan</h3>
+                    <p class="text-light mb-0">Explore ultra-modern skyscrapers mixed with historic temples.</p>
+                </div>
+            </div>
+            <div class="carousel-item h-100">
+                <img src="https://d122axpxm39woi.cloudfront.net/images/destinations/origin/5cf4979832089.png" class="d-block w-100 h-100 object-fit-cover" alt="Dubai Featured">
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3">
+                    <h3 class="fw-bold text-white">Mandalay</h3>
+                    <p class="text-light mb-0">Witness luxury shopping, state-of-the-art architecture, and vibrant nightlife.</p>
+                </div>
+            </div>
+
+            <!-- <div class="carousel-item active h-100">
+                <img src="{{ url_for('static', filename='images/shwedagon.webp') }}" class="d-block w-100 h-100 object-fit-cover" alt="Paris Featured">
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3 backdrop-blur">
+                    <h3 class="fw-bold text-white">Shwedagon, Yangon</h3>
+                    <p class="text-light mb-0">Experience the city of lights, culture, and timeless architecture.</p>
+                </div>
+            </div>
+            <div class="carousel-item h-100">
+                <img src="{{ url_for('static', filename='images/sule.webp') }}" class="d-block w-100 h-100 object-fit-cover" alt="Tokyo Featured">
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3">
+                    <h3 class="fw-bold text-white">Sule, Yangon</h3>
+                    <p class="text-light mb-0">Explore ultra-modern skyscrapers mixed with historic temples.</p>
+                </div>
+            </div>
+            <div class="carousel-item h-100">
+                <img src="{{ url_for('static', filename='images/image355.jpg') }}" class="d-block w-100 h-100 object-fit-cover" alt="Dubai Featured">
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-3 p-3">
+                    <h3 class="fw-bold text-white">Ngapali, Yakine</h3>
+                    <p class="text-light mb-0">Witness luxury shopping, state-of-the-art architecture, and vibrant nightlife.</p>
+                </div>
+            </div> -->
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#placesCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#placesCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+
+    <!-- Sticky Server-Side Filter Bar -->
+    <div class="sticky-top py-3 mb-4 bg-white bg-opacity-95 backdrop-blur shadow-sm rounded-3 px-3 border" style="top: 70px; z-index: 1020;">
+        <form method="GET" action="{{ request.path }}" class="row g-2 align-items-center">
+            
+            <!-- Search Box -->
+            <div class="col-12 col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted">🔍</span>
+                    <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="Search destinations..." value="{{ search_query }}">
+                </div>
+            </div>
+
+            <!-- Region Filter -->
+            <div class="col-6 col-md-2">
+                <select name="region" class="form-select bg-light" onchange="this.form.submit()">
+                    <option value="all" {% if region_filter == 'all' %}selected{% endif %}>All Regions</option>
+                    {% for reg in regions %}
+                    <option value="{{ reg.id }}" {% if region_filter == reg.id|string %}selected{% endif %}>{{ reg.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="col-6 col-md-2">
+                <select name="category" class="form-select bg-light" onchange="this.form.submit()">
+                    <option value="all" {% if category_filter == 'all' %}selected{% endif %}>All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if category_filter == cat.id|string %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Sorting Dropdown -->
+            <div class="col-8 col-md-3">
+                <select name="sort" class="form-select bg-light" onchange="this.form.submit()">
+                    <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Sort: Newest First</option>
+                    <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Sort: Oldest First</option>
+                    <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
+                    <option value="name_desc" {% if sort_by == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                    <option value="rating_desc" {% if sort_by == 'rating_desc' %}selected{% endif %}>Highest Rated ⭐</option>
+                </select>
+            </div>
+
+            <!-- Reset Button -->
+            <div class="col-4 col-md-1 d-grid">
+                <a href="{{ request.path }}" class="btn btn-outline-secondary" title="Reset Filters">↻ Reset</a>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- Destinations Grid -->
+    <div class="row g-4 mb-4" id="placesGrid">
+        {% for p in places %}
+        <div class="col-md-6 col-lg-4 place-card-item">
+            <div class="card card-custom border-0 shadow-sm h-100 overflow-hidden">
+                <img src="{% if p.image_file and p.image_file != 'default.jpg' %}{{ url_for('static', filename='uploads/' + p.image_file) }}{% else %}https://www.mdn.gov.mm/sites/default/files/articles/IMG-9d3493b3b135b295c09573d583699c4a-V_0.jpg?auto=format&fit=crop&w=600&q=80{% endif %}" 
+                     onerror="this.src='https://www.mdn.gov.mm/sites/default/files/articles/IMG-9d3493b3b135b295c09573d583699c4a-V_0.jpg?auto=format&fit=crop&w=600&q=80'" 
+                     class="card-img-top object-fit-cover" 
+                     style="height: 200px;" 
+                     alt="{{ p.name }}">
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-warning bg-opacity-20 text-dark fw-semibold">{{ p.package or 'Standard' }}</span>
+                            <span class="text-muted small">
+                                {% if p.average_rating and p.average_rating > 0 %}
+                                    ⭐ <strong class="text-dark">{{ p.average_rating }}</strong> ({{ p.total_reviews }})
+                                {% else %}
+                                    ⭐ <span class="text-muted">No reviews yet</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">{{ p.name }}</h5>
+                        <p class="text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                            {{ p.description or 'Explore amazing landmarks and curated travel experiences.' }}
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                        <a href="/user/places/{{ p.id }}" class="btn btn-outline-dark btn-sm px-3 rounded-pill fw-medium">View Location</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <div class="alert alert-warning shadow-sm rounded-3 py-4" role="alert">
+                <h5 class="fw-bold mb-1">No destinations found</h5>
+                <p class="text-muted mb-0">There are currently no places added to the database matching your query.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if pagination.pages > 1 %}
+    <div class="d-flex justify-content-between align-items-center py-3 border-top mb-5">
+        <span class="small text-muted">
+            Showing {{ places|length }} of {{ pagination.total }} destinations
+        </span>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('user.places_page', page=pagination.prev_num, search=search_query, region=region_filter, category=category_filter, sort=sort_by) }}">Previous</a>
+                </li>
+
+                {% for p in pagination.iter_pages() %}
+                    {% if p %}
+                        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('user.places_page', page=p, search=search_query, region=region_filter, category=category_filter, sort=sort_by) }}">{{ p }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('user.places_page', page=pagination.next_num, search=search_query, region=region_filter, category=category_filter, sort=sort_by) }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

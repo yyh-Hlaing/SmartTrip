@@ -1,0 +1,176 @@
+{% extends 'admin/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4" style="max-width: 1300px;">
+
+    <!-- Top Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">👥 User & Activity Analytics</h3>
+            <p class="text-muted small mb-0">Demographics, system engagement, user preferences, and feedback breakdown.</p>
+        </div>
+        <div>
+            <span class="badge px-3 py-2 rounded-pill shadow-sm" style="background-color: #d4af37; color: #fff; font-size: 0.9rem;">
+                Total Registered Users: <strong>{{ total_users }}</strong>
+            </span>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Theme Preference Pie Chart -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 p-3">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold text-dark mb-3">🎨 UI Theme Preference</h6>
+                    <div style="height: 240px; position: relative;">
+                        <canvas id="themeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Role Distribution Pie Chart -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 p-3">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold text-dark mb-3">🛡️ User Roles Breakdown</h6>
+                    <div style="height: 240px; position: relative;">
+                        <canvas id="roleChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Types Donut Chart -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 p-3">
+                <div class="card-body text-center">
+                    <h6 class="fw-bold text-dark mb-3">💬 Feedback Types Submitted</h6>
+                    <div style="height: 240px; position: relative;">
+                        <canvas id="feedbackChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Data Table -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 px-4">
+            <h6 class="fw-bold text-dark mb-0">👤 User Engagement Overview</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-uppercase text-muted small fw-bold">
+                    <tr>
+                        <th class="ps-4">User</th>
+                        <th>Role</th>
+                        <th>Theme</th>
+                        <th class="text-center">Trips</th>
+                        <th class="text-center">Saved Places</th>
+                        <th class="text-center">Likes</th>
+                        <th class="text-center">Reviews</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if users %}
+                    {% for user in users %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="{{ url_for('static', filename='uploads/' + user.profile_pic) }}" 
+                                     onerror="this.src='{{ url_for('static', filename='images/default_avatar.png') }}'" 
+                                     class="rounded-circle border" style="width: 40px; height: 40px; object-fit: cover;">
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0">{{ user.username }}</h6>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ user.role.name if user.role else 'Standard' }}</span>
+                        </td>
+                        <td>
+                            <span class="badge {% if user.theme_preference == 'dark' %}bg-dark text-white{% else %}bg-secondary-subtle text-dark{% endif %} border">
+                                {{ user.theme_preference or 'light' }}
+                            </span>
+                        </td>
+                        <td class="text-center fw-bold text-primary">{{ user.trips|length }}</td>
+                        <td class="text-center fw-bold text-warning">{{ user.favorites|length }}</td>
+                        <td class="text-center fw-bold text-danger">{{ user.likes|length }}</td>
+                        <td class="text-center fw-bold text-success">{{ user.comments|length + user.restaurant_comments|length }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No users found in database.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pagination.pages > 1 %}
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Showing page {{ pagination.page }} of {{ pagination.pages }}</span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.user_analytics', page=pagination.prev_num) }}">Previous</a>
+                    </li>
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.user_analytics', page=pagination.next_num) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const themeCtx = document.getElementById('themeChart').getContext('2d');
+    new Chart(themeCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ theme_labels|safe }},
+            datasets: [{
+                data: {{ theme_data|safe }},
+                backgroundColor: ['#d4af37', '#2b2d42', '#e9ecef']
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    const roleCtx = document.getElementById('roleChart').getContext('2d');
+    new Chart(roleCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ role_labels|safe }},
+            datasets: [{
+                data: {{ role_data|safe }},
+                backgroundColor: ['#4b6bfb', '#10b981', '#f59e0b', '#ef4444']
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    const feedbackCtx = document.getElementById('feedbackChart').getContext('2d');
+    new Chart(feedbackCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ feedback_labels|safe }},
+            datasets: [{
+                data: {{ feedback_data|safe }},
+                backgroundColor: ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981']
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+</script>
+{% endblock %}

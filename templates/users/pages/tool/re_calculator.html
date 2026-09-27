@@ -1,0 +1,1348 @@
+{% extends "users/layouts/base.html" %}
+
+{% block title %}SmartTrip - Budget-Based Destination Finder{% endblock %}
+
+{% block content %}
+
+<div class="container py-3 mx-auto" style="max-width: 1300px;">
+
+```
+<!-- Top Banner -->
+<div class="card card-custom border-0 shadow-sm mb-4 overflow-hidden"
+    style="background: linear-gradient(135deg, rgba(13,110,253,0.15) 0%, rgba(255,255,255,1) 100%);">
+    <div class="card-body p-4 p-md-5">
+        <h2 class="fw-bold text-dark mb-1">🎯 Where Can My Budget Take Me?</h2>
+        <p class="text-muted mb-0">
+            Enter your total budget, trip duration, number of travelers and preferences
+            to discover destinations you can afford.
+        </p>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+
+    <!-- Input Form Column -->
+    <div class="col-lg-4">
+        <div class="card card-custom border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+
+                <form id="reverseCalculatorForm">
+
+                    <!-- Total Budget -->
+                    <div class="mb-3">
+                        <label for="userBudget"
+                            class="form-label small fw-bold text-muted text-uppercase">
+                            Total Budget (MMK)
+                        </label>
+
+                        <input
+                            type="number"
+                            id="userBudget"
+                            class="form-control border-0 bg-light rounded-pill px-3 py-2"
+                            placeholder="e.g., 500000"
+                            min="0"
+                            step="1000"
+                            value="200000"
+                            required>
+                    </div>
+
+
+                    <!-- Number of People -->
+                    <div class="mb-3">
+                        <label for="numPeople"
+                            class="form-label small fw-bold text-muted text-uppercase">
+                            Number of Travelers
+                        </label>
+
+                        <input
+                            type="number"
+                            id="numPeople"
+                            class="form-control border-0 bg-light rounded-pill px-3 py-2"
+                            min="1"
+                            max="20"
+                            value="1"
+                            required>
+                    </div>
+
+
+                    <!-- Travel Type -->
+                    <div class="mb-3">
+                        <label for="selectType"
+                            class="form-label small fw-bold text-muted text-uppercase">
+                            Travel Type
+                        </label>
+
+                        <select
+                            id="selectType"
+                            class="form-select border-0 bg-light rounded-pill px-3 py-2"
+                            required>
+
+                            <option value="all" selected>
+                                🔍 All Travel Types
+                            </option>
+
+                            <option value="ဘုရားဖူး">
+                                🛕 Pagoda
+                            </option>
+
+                            <option value="ကမ်းခြေ">
+                                🏖️ Beach
+                            </option>
+
+                            <option value="တောင်တက်ခရီး">
+                                🏔️ Adventure
+                            </option>
+
+                        </select>
+                    </div>
+
+
+                    <!-- Duration -->
+                    <div class="mb-3">
+                        <label for="tripDuration"
+                            class="form-label small fw-bold text-muted text-uppercase">
+                            Duration (Number of Days)
+                        </label>
+
+                        <input
+                            type="number"
+                            id="tripDuration"
+                            class="form-control border-0 bg-light rounded-pill px-3 py-2"
+                            min="1"
+                            max="30"
+                            value="3"
+                            required>
+                    </div>
+
+
+                    <!-- Transport -->
+                    <div class="mb-4">
+                        <label for="selectTransport"
+                            class="form-label small fw-bold text-muted text-uppercase">
+                            Preferred Transport
+                        </label>
+
+                        <select
+                            id="selectTransport"
+                            class="form-select border-0 bg-light rounded-pill px-3 py-2"
+                            required>
+
+                            <option value="all" selected>
+                                🔍 Any Transport (Cheapest)
+                            </option>
+
+                            <option value="bus">
+                                🚌 Express Bus Only
+                            </option>
+
+                            <option value="train">
+                                🚆 Train Only
+                            </option>
+
+                            
+                        </select>
+                    </div>
+
+
+                    <!-- Calculation Formula -->
+                    <div class="alert alert-light border rounded-3 small mb-0">
+                        <strong>💰 Estimated Cost</strong>
+                        <br>
+                        Transport + Living Cost
+                        <hr class="my-2">
+                        <small class="text-muted">
+                            Living Cost = Base Price × Days × People
+                        </small>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Results Display Column -->
+    <div class="col-lg-8">
+
+        <div class="card card-custom border-0 shadow-sm h-100 bg-light bg-opacity-50">
+
+            <div class="card-body p-4">
+
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">
+                            🔥 Recommended Destinations
+                        </h4>
+
+                        <small class="text-muted">
+                            Ranked by Budget Match, Rating and Popularity
+                        </small>
+                    </div>
+
+                    <span
+                        class="badge bg-dark px-3 py-2 rounded-pill"
+                        id="matchCount">
+
+                        0 options found
+
+                    </span>
+
+                </div>
+
+
+                <!-- Hidden Places Data -->
+                <div id="placesDataStore" class="d-none">
+
+                    {% for place in places %}
+
+                    <div
+                        class="place-item"
+
+                        data-id="{{ place.id }}"
+
+                        data-name="{{ place.name }}"
+
+                        data-package="{{ place.package or 'General' }}"
+
+                        data-base="{{ place.base_price_per_day or 0 }}"
+
+                        data-bus="{{ place.bus_fare or 0 }}"
+
+                        data-train="{{ place.train_fare or 0 }}"
+
+                        data-taxi="{{ place.taxi_fare or 0 }}"
+
+                        data-lat="{{ place.latitude or 0.0 }}"
+
+                        data-lng="{{ place.longitude or 0.0 }}"
+
+                        data-likes="{{ place.likes|length }}"
+
+                        data-reviews="{{ place.total_reviews or 0 }}"
+
+                        data-favorites="{{ place.favorites|length }}"
+
+                        data-rating="{{ place.average_rating or 0 }}">
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <!-- Results -->
+                <div
+                    id="resultsContainer"
+                    class="d-flex flex-column gap-3"
+                    style="max-height: 650px; overflow-y: auto;">
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+```
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // ==========================================
+    // Get Form Elements
+    // ==========================================
+
+    const budgetInput =
+        document.getElementById("userBudget");
+
+    const peopleInput =
+        document.getElementById("numPeople");
+
+    const typeInput =
+        document.getElementById("selectType");
+
+    const durationInput =
+        document.getElementById("tripDuration");
+
+    const transportSelect =
+        document.getElementById("selectTransport");
+
+
+    const resultsContainer =
+        document.getElementById("resultsContainer");
+
+    const matchCountBadge =
+        document.getElementById("matchCount");
+
+
+    // ==========================================
+    // Read Places Data
+    // ==========================================
+
+    const placeElements =
+        document.querySelectorAll(".place-item");
+
+
+    const places =
+        Array.from(placeElements).map(el => ({
+
+            id:
+                el.getAttribute("data-id"),
+
+            name:
+                el.getAttribute("data-name"),
+
+            package:
+                el.getAttribute("data-package") || "General",
+
+            base:
+                parseFloat(
+                    el.getAttribute("data-base")
+                ) || 0,
+
+            bus:
+                parseFloat(
+                    el.getAttribute("data-bus")
+                ) || 0,
+
+            train:
+                parseFloat(
+                    el.getAttribute("data-train")
+                ) || 0,
+
+            taxi:
+                parseFloat(
+                    el.getAttribute("data-taxi")
+                ) || 0,
+
+            lat:
+                parseFloat(
+                    el.getAttribute("data-lat")
+                ) || 0,
+
+            lng:
+                parseFloat(
+                    el.getAttribute("data-lng")
+                ) || 0,
+
+            likes:
+                parseInt(
+                    el.getAttribute("data-likes")
+                ) || 0,
+
+            reviews:
+                parseInt(
+                    el.getAttribute("data-reviews")
+                ) || 0,
+
+            favorites:
+                parseInt(
+                    el.getAttribute("data-favorites")
+                ) || 0,
+
+            rating:
+                parseFloat(
+                    el.getAttribute("data-rating")
+                ) || 0
+
+        }));
+
+
+    // ==========================================
+    // Main Calculation
+    // ==========================================
+
+    function calculateAndRender() {
+
+        // --------------------------------------
+        // User Inputs
+        // --------------------------------------
+
+        const userBudget =
+            parseFloat(budgetInput.value) || 0;
+
+        const numPeople =
+            parseInt(peopleInput.value) || 1;
+
+        const selectedType =
+            typeInput.value;
+
+        const days =
+            parseInt(durationInput.value) || 1;
+
+        const transportPref =
+            transportSelect.value;
+
+
+        let affordablePlaces = [];
+
+
+        // ======================================
+        // Loop Through All Places
+        // ======================================
+
+        places.forEach(place => {
+
+            // ----------------------------------
+            // Filter by Travel Type
+            // ----------------------------------
+
+            if (selectedType !== "all") {
+
+                const placePackage =
+                    String(place.package)
+                    .trim()
+                    .toLowerCase();
+
+                const selectedPackage =
+                    String(selectedType)
+                    .trim()
+                    .toLowerCase();
+
+
+                if (placePackage !== selectedPackage) {
+                    return;
+                }
+            }
+
+
+            // ==================================
+            // Transport Options
+            // ==================================
+
+            let fares = [];
+
+
+            if (transportPref === "all") {
+
+                const availableFares = [
+
+                    {
+                        type: "Express Bus",
+                        cost: place.bus,
+                        icon: "🚌"
+                    },
+
+                    {
+                        type: "Train",
+                        cost: place.train,
+                        icon: "🚆"
+                    },
+
+                   
+                ].filter(fare => fare.cost > 0);
+
+
+                // Sort cheapest transport first
+
+                availableFares.sort(
+                    (a, b) => a.cost - b.cost
+                );
+
+
+                // Only choose cheapest transport
+
+                if (availableFares.length > 0) {
+
+                    fares = [
+                        availableFares[0]
+                    ];
+
+                }
+
+
+            } else if (transportPref === "bus") {
+
+                fares = [
+
+                    {
+                        type: "Express Bus",
+                        cost: place.bus,
+                        icon: "🚌"
+                    }
+
+                ];
+
+            }
+
+
+            else if (transportPref === "train") {
+
+                fares = [
+
+                    {
+                        type: "Train",
+                        cost: place.train,
+                        icon: "🚆"
+                    }
+
+                ];
+
+            }
+
+
+            else if (transportPref === "taxi") {
+
+                fares = [
+
+                    {
+                        type: "Taxi / Private",
+                        cost: place.taxi,
+                        icon: "🚕"
+                    }
+
+                ];
+
+            }
+
+
+            // ==================================
+            // Calculate Each Transport Option
+            // ==================================
+
+            fares.forEach(fareObj => {
+
+
+                // --------------------------------
+                // Skip Invalid Fare
+                // --------------------------------
+
+                if (fareObj.cost <= 0) {
+                    return;
+                }
+
+
+                // =================================
+                // 1. TRANSPORT COST
+                //
+                // Transport Fare × People
+                // =================================
+
+                const totalTransportCost =
+                    fareObj.cost * numPeople *2;
+
+
+                // =================================
+                // 2. LIVING COST
+                //
+                // Base Price Per Day
+                // × Number of Days
+                // × Number of People
+                // =================================
+
+                const totalLivingCost =
+                    place.base *
+                    days *
+                    numPeople;
+
+
+                // =================================
+                // 3. GRAND TOTAL
+                // =================================
+
+                const grandTotal =
+                    totalTransportCost +
+                    totalLivingCost;
+
+
+                // =================================
+                // 4. CHECK USER BUDGET
+                // =================================
+
+                if (
+                    userBudget > 0 &&
+                    grandTotal <= userBudget
+                ) {
+
+
+                    // =============================
+                    // Budget Utilization
+                    // =============================
+
+                    const budgetUsed =
+                        (grandTotal / userBudget) * 100;
+
+
+                    // =============================
+                    // Budget Score
+                    //
+                    // Ideal usage around 80%
+                    // =============================
+
+                    const budgetScore =
+                        Math.max(
+                            0,
+                            100 -
+                            Math.abs(
+                                80 - budgetUsed
+                            )
+                        );
+
+
+                    // =============================
+                    // Rating Score
+                    // =============================
+
+                    const ratingScore =
+                        Math.min(
+                            100,
+                            (place.rating / 5) * 100
+                        );
+
+
+                    // =============================
+                    // Popularity Score
+                    // =============================
+
+                    const rawPopularity =
+                        (place.likes * 2) +
+                        (place.favorites * 3) +
+                        place.reviews;
+
+
+                    const popularityScore =
+                        Math.min(
+                            100,
+                            rawPopularity
+                        );
+
+
+                    // =============================
+                    // Final Recommendation Score
+                    //
+                    // Budget     = 50%
+                    // Rating     = 30%
+                    // Popularity = 20%
+                    // =============================
+
+                    const recommendationScore =
+                        (budgetScore * 0.50) +
+                        (ratingScore * 0.30) +
+                        (popularityScore * 0.20);
+
+
+                    // =============================
+                    // Save Result
+                    // =============================
+
+                    affordablePlaces.push({
+
+                        id:
+                            place.id,
+
+                        name:
+                            place.name,
+
+                        package:
+                            place.package,
+
+
+                        transportName:
+                            fareObj.type,
+
+                        transportIcon:
+                            fareObj.icon,
+
+
+                        transportCost:
+                            totalTransportCost,
+
+                        livingCost:
+                            totalLivingCost,
+
+
+                        baseDaily:
+                            place.base,
+
+
+                        totalCost:
+                            grandTotal,
+
+
+                        matchPercent:
+                            Math.round(
+                                budgetUsed
+                            ),
+
+
+                        remainingBudget:
+                            userBudget -
+                            grandTotal,
+
+
+                        budgetScore:
+                            Math.round(
+                                budgetScore
+                            ),
+
+
+                        ratingScore:
+                            Math.round(
+                                ratingScore
+                            ),
+
+
+                        popularityScore:
+                            Math.round(
+                                popularityScore
+                            ),
+
+
+                        recommendationScore:
+                            Math.round(
+                                recommendationScore
+                            ),
+
+
+                        lat:
+                            place.lat,
+
+                        lng:
+                            place.lng,
+
+
+                        likes:
+                            place.likes,
+
+                        reviews:
+                            place.reviews,
+
+                        favorites:
+                            place.favorites,
+
+                        rating:
+                            place.rating
+
+                    });
+
+                }
+
+            });
+
+        });
+
+
+        // ======================================
+        // Sort By Recommendation Score
+        // ======================================
+
+        affordablePlaces.sort(
+            (a, b) => {
+
+                // Primary:
+                // Recommendation Score
+
+                if (
+                    b.recommendationScore !==
+                    a.recommendationScore
+                ) {
+
+                    return (
+                        b.recommendationScore -
+                        a.recommendationScore
+                    );
+
+                }
+
+
+                // Secondary:
+                // Higher Rating
+
+                return (
+                    b.rating -
+                    a.rating
+                );
+
+            }
+        );
+
+
+        // ======================================
+        // Update Match Count
+        // ======================================
+
+        matchCountBadge.innerText =
+            `${affordablePlaces.length} options found`;
+
+
+        // ======================================
+        // No Results
+        // ======================================
+
+        if (
+            affordablePlaces.length === 0
+        ) {
+
+            resultsContainer.innerHTML = `
+
+                <div class="text-center py-5 bg-white rounded-3 shadow-sm">
+
+                    <div class="fs-1 mb-2">
+                        💡
+                    </div>
+
+                    <h5 class="fw-bold text-dark">
+                        No destinations match your budget
+                    </h5>
+
+                    <p class="text-muted small mb-0">
+
+                        Try increasing your budget,
+                        reducing the number of days,
+                        or selecting another transport option.
+
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        // ======================================
+        // Render Results
+        // ======================================
+
+        let html = "";
+
+
+        affordablePlaces.forEach(
+            (item, index) => {
+
+
+                // --------------------------------
+                // Rank Badge
+                // --------------------------------
+
+                let rankBadge = "";
+
+                if (index === 0) {
+
+                    rankBadge =
+                        `<span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+                            🥇 Best Match
+                        </span>`;
+
+                }
+
+                else if (index === 1) {
+
+                    rankBadge =
+                        `<span class="badge bg-secondary rounded-pill px-3 py-2">
+                            🥈 2nd Best
+                        </span>`;
+
+                }
+
+                else if (index === 2) {
+
+                    rankBadge =
+                        `<span class="badge bg-danger rounded-pill px-3 py-2">
+                            🥉 3rd Best
+                        </span>`;
+
+                }
+
+                else {
+
+                    rankBadge =
+                        `<span class="badge bg-light text-dark border rounded-pill px-3 py-2">
+                            #${index + 1}
+                        </span>`;
+
+                }
+
+
+                // --------------------------------
+                // Budget Badge Color
+                // --------------------------------
+
+                let badgeClass =
+                    item.matchPercent >= 85
+                        ? "bg-primary"
+                        : (
+                            item.matchPercent >= 50
+                                ? "bg-success"
+                                : "bg-info text-dark"
+                        );
+
+
+                // --------------------------------
+                // Result Card
+                // --------------------------------
+
+                html += `
+
+                <div
+                    class="p-4 bg-white rounded-3 shadow-sm border-start border-4 border-success">
+
+                    <div
+                        class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+
+                        <!-- Destination Info -->
+
+                        <div>
+
+                            <div class="mb-2">
+
+                                ${rankBadge}
+
+                            </div>
+
+
+                            <h5 class="fw-bold text-dark mb-2">
+
+                                ${item.name}
+
+                            </h5>
+
+
+                            <div
+                                class="d-flex align-items-center gap-2 flex-wrap">
+
+
+                                <span
+                                    class="badge bg-primary rounded-pill px-3 py-2">
+
+                                    🏷️ ${item.package}
+
+                                </span>
+
+
+                                <span
+                                    class="badge bg-light text-dark border rounded-pill px-3 py-2">
+
+                                    ${item.transportIcon}
+                                    ${item.transportName}
+
+                                </span>
+
+
+                                <span
+                                    class="badge bg-warning text-dark rounded-pill px-2 py-1">
+
+                                    ⭐ ${item.rating.toFixed(1)}
+
+                                </span>
+
+
+                                <span
+                                    class="badge bg-light text-muted border rounded-pill px-2 py-1">
+
+                                    ❤️ ${item.likes}
+
+                                </span>
+
+
+                                <span
+                                    class="badge bg-light text-muted border rounded-pill px-2 py-1">
+
+                                    💬 ${item.reviews}
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Total Cost -->
+
+                        <div class="text-end">
+
+
+                            <span
+                                class="badge ${badgeClass} rounded-pill px-3 py-2 mb-2 d-inline-block">
+
+                                🎯 ${item.matchPercent}% Budget Used
+
+                            </span>
+
+
+                            <div
+                                class="fw-bold text-dark fs-5">
+
+                                ${item.totalCost.toLocaleString()}
+                                MMK
+
+                            </div>
+
+
+                            <small class="text-success">
+
+                                💰
+                                ${item.remainingBudget.toLocaleString()}
+                                MMK remaining
+
+                            </small>
+
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Cost Breakdown -->
+
+                    <div
+                        class="row g-2 mt-3 pt-3 border-top">
+
+
+                        <div class="col-md-4">
+
+                            <div
+                                class="bg-light rounded-3 p-2 small">
+
+                                <span class="text-muted">
+
+                                    ${item.transportIcon}
+                                    Transport
+
+                                </span>
+
+                                <div class="fw-bold">
+
+                                    ${item.transportCost.toLocaleString()}
+                                    MMK
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <div
+                                class="bg-light rounded-3 p-2 small">
+
+                                <span class="text-muted">
+
+                                    🏨 Living Cost
+
+                                </span>
+
+                                <div class="fw-bold">
+
+                                    ${item.livingCost.toLocaleString()}
+                                    MMK
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <div
+                                class="bg-light rounded-3 p-2 small">
+
+                                <span class="text-muted">
+
+                                    🧠 Recommendation
+
+                                </span>
+
+                                <div class="fw-bold text-primary">
+
+                                    ${item.recommendationScore}/100
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Score Details -->
+
+                    <div class="mt-3 small text-muted">
+
+                        <span class="me-3">
+
+                            💰 Budget Score:
+                            ${item.budgetScore}
+
+                        </span>
+
+                        <span class="me-3">
+
+                            ⭐ Rating Score:
+                            ${item.ratingScore}
+
+                        </span>
+
+                        <span>
+
+                            🔥 Popularity:
+                            ${item.popularityScore}
+
+                        </span>
+
+                    </div>
+
+
+                    <!-- Action -->
+
+                    <div
+                        class="border-top pt-3 mt-3 text-end">
+
+
+                        <button
+                            type="button"
+                            class="btn btn-success rounded-pill px-4"
+
+                            onclick="saveDraftAndProceed(
+                                '${item.id}',
+                                '${item.name.replace(/'/g, "\\'")}',
+                                ${item.transportCost},
+                                '${item.package.replace(/'/g, "\\'")}',
+                                ${item.lat},
+                                ${item.lng},
+                                ${item.totalCost},
+                                ${item.livingCost}
+                            )">
+
+
+                            📅 Select & Plan Itinerary →
+
+                        </button>
+
+
+                    </div>
+
+                </div>
+
+                `;
+
+            }
+        );
+
+
+        resultsContainer.innerHTML =
+            html;
+
+    }
+
+
+    // ==========================================
+    // Event Listeners
+    // ==========================================
+
+    budgetInput.addEventListener(
+        "input",
+        calculateAndRender
+    );
+
+
+    peopleInput.addEventListener(
+        "input",
+        calculateAndRender
+    );
+
+
+    typeInput.addEventListener(
+        "change",
+        calculateAndRender
+    );
+
+
+    durationInput.addEventListener(
+        "input",
+        calculateAndRender
+    );
+
+
+    transportSelect.addEventListener(
+        "change",
+        calculateAndRender
+    );
+
+
+    // ==========================================
+    // Initial Calculation
+    // ==========================================
+
+    calculateAndRender();
+
+});
+
+
+// ==============================================
+// Save Draft and Proceed
+// ==============================================
+
+function saveDraftAndProceed(
+    placeId,
+    placeName,
+    transportCost,
+    pkg,
+    lat,
+    lng,
+    totalCost,
+    livingCost
+) {
+
+    const userBudget =
+        parseFloat(
+            document.getElementById(
+                "userBudget"
+            ).value
+        ) || 0;
+
+
+    const numPeople =
+        parseInt(
+            document.getElementById(
+                "numPeople"
+            ).value
+        ) || 1;
+
+
+    const days =
+        parseInt(
+            document.getElementById(
+                "tripDuration"
+            ).value
+        ) || 1;
+
+
+    const payload = {
+
+        dest_place_id:
+            placeId,
+
+        dest_name:
+            placeName,
+
+        days:
+            days,
+
+        people:
+            numPeople,
+
+        user_budget:
+            userBudget,
+
+        transport_cost:
+            transportCost,
+
+        living_cost:
+            livingCost,
+
+        estimated_total:
+            totalCost,
+
+        package:
+            pkg,
+
+        lat:
+            lat,
+
+        lng:
+            lng
+
+    };
+
+
+    fetch(
+        "/user/trip/save-draft",
+        {
+
+            method:
+                "POST",
+
+            headers: {
+
+                "Content-Type":
+                    "application/json",
+
+                "Accept":
+                    "application/json"
+
+            },
+
+            body:
+                JSON.stringify(payload)
+
+        }
+    )
+
+    .then(res => {
+
+        if (!res.ok) {
+
+            throw new Error(
+                "Server error"
+            );
+
+        }
+
+        return res.json();
+
+    })
+
+
+    .then(data => {
+
+        if (
+            data.status === "success" &&
+            data.redirect_url
+        ) {
+
+            window.location.href =
+                data.redirect_url;
+
+        }
+
+        else {
+
+            alert(
+                "Error starting trip planning: " +
+                (
+                    data.message ||
+                    "Unknown error"
+                )
+            );
+
+        }
+
+    })
+
+
+    .catch(err => {
+
+        console.error(
+            "Draft save error:",
+            err
+        );
+
+        alert(
+            "Server connection error."
+        );
+
+    });
+
+}
+
+</script>
+
+{% endblock %}

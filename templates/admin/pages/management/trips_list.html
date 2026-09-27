@@ -1,0 +1,108 @@
+{% extends 'admin/layouts/base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4" style="max-width: 1350px;">
+    <!-- Main Data Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+        <!-- Table Control Toolbar -->
+        <div class="card-header bg-white border-bottom p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="input-group" style="max-width: 320px;">
+                <span class="input-group-text bg-light border-end-0">🔍</span>
+                <input type="text" id="tableSearch" class="form-control bg-light border-start-0 small" placeholder="Search trips, places, or users..." onkeyup="filterTripsTable()">
+            </div>
+            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small">
+                Total Plans: <strong class="text-primary">{{ trips | length }}</strong>
+            </span>
+        </div>
+
+        <!-- Table View -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tripsTable">
+                <thead class="bg-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4" style="width: 70px;">ID</th>
+                        <th>Trip Title</th>
+                        <th>Destination Place</th>
+                        <th>Start Location</th>
+                        <th>User</th>
+                        <th>Date Created</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% if trips %}
+                        {% for trip in trips %}
+                        <tr>
+                            <!-- ID -->
+                            <td class="ps-4 fw-bold text-secondary">#{{ trip.id }}</td>
+                            
+                            <!-- Title & Badge -->
+                            <td>
+                                <div class="fw-semibold text-dark">{{ trip.title }}</div>
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill" style="font-size: 0.7rem;">
+                                    Suggested Route
+                                </span>
+                            </td>
+
+                            <!-- Destination Place Lookup -->
+                            <td>
+                                {% set dest_place = places | selectattr('id', 'equalto', trip.dest_place_id) | first %}
+                                {% if dest_place %}
+                                    <span class="fw-medium text-primary">📍 {{ dest_place.name }}</span>
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;">ID: #{{ dest_place.id }}</small>
+                                {% else %}
+                                    <span class="text-muted">ID: #{{ trip.dest_place_id }}</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Start Coordinates -->
+                            <td>
+                                <code class="text-dark bg-light px-2 py-1 rounded small">
+                                    {{ trip.start_lat | round(4) }}, {{ trip.start_lng | round(4) }}
+                                </code>
+                            </td>
+
+                            <!-- User Username -->
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-medium text-dark">👤 {{ trip.user.username if trip.user else 'Unknown' }}</span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">(#{{ trip.user_id }})</small>
+                                </div>
+                            </td>
+
+                            <!-- Created Date -->
+                            <td class="text-muted small">
+                                {{ trip.created_at.strftime('%b %d, %Y') if trip.created_at else 'N/A' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <div class="py-3">
+                                    <span class="fs-2">🗺️</span>
+                                    <p class="mt-2 mb-0 fw-medium">No trip plans found in the database.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Client-side search filter
+    function filterTripsTable() {
+        const input = document.getElementById('tableSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('#tripsTable tbody tr');
+
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}
